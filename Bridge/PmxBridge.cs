@@ -38,9 +38,11 @@ namespace TextureGrade.Bridge
         {
             var pmx = _host.Connector.Pmx.GetCurrentState();
             _lastPmx = pmx;
-            _pmxDir = Path.GetDirectoryName(pmx.FilePath);
+            // 未打开模型时 FilePath 为 null/空，Path.GetDirectoryName 会抛 ArgumentException
+            _pmxDir = string.IsNullOrEmpty(pmx?.FilePath) ? null : Path.GetDirectoryName(pmx.FilePath);
 
             var list = new List<MaterialInfo>();
+            if (pmx == null || pmx.Material == null) return new ModelSnapshot(pmx?.FilePath ?? "", _pmxDir, list);
             for (int i = 0; i < pmx.Material.Count; i++)
             {
                 var m = pmx.Material[i];
@@ -109,6 +111,40 @@ namespace TextureGrade.Bridge
                 result.Add((a.U, a.V, b.U, b.V, c.U, c.V));
             }
             return result;
+        }
+
+        public IReadOnlyList<(float u1, float v1, float u2, float v2, float u3, float v3, int i1, int i2, int i3)> GetUVTrianglesWithIndices(int materialIndex)
+        {
+            var result = new List<(float, float, float, float, float, float, int, int, int)>();
+            if (_lastPmx == null) return result;
+
+            // IPXVertex -> 全局顶点索引（UVEditor 的 SetFaces 同款做法：按引用建字典）
+            var dict = new Dictionary<IPXVertex, int>();
+            for (int i = 0; i < _lastPmx.Vertex.Count; i++)
+                dict[_lastPmx.Vertex[i]] = i;
+
+            foreach (var f in _lastPmx.Material[materialIndex].Faces)
+            {
+                var a = f.Vertex1.UV;
+                var b = f.Vertex2.UV;
+                var c = f.Vertex3.UV;
+                result.Add((a.U, a.V, b.U, b.V, c.U, c.V,
+                            dict[f.Vertex1], dict[f.Vertex2], dict[f.Vertex3]));
+            }
+            return result;
+        }
+
+        public int[] GetPmxSelectedVertices()
+        {
+            // 仿 UVEditor MyPMX.ReceiveSelected：取 3D 视图当前选中顶点索引
+            return new List<int>(_host.Connector.View.PMDView.GetSelectedVertexIndices()).ToArray();
+        }
+
+        public void SetPmxSelectedVertices(int[] vertexIndices)
+        {
+            // 仿 UVEditor MyPMX.SendSelected
+            _host.Connector.View.PMDView.SetSelectedVertexIndices(vertexIndices);
+            _host.Connector.View.PMDView.UpdateView();
         }
 
         public void Cleanup()

@@ -156,6 +156,12 @@ namespace TextureGrade.WpfUI
         private readonly HashSet<int> _selectedTris = new HashSet<int>();
         private bool[] _maskCache;
 
+        // 顶点选区：「接收选择顶点」从 PMXEditor 3D 视图收来的顶点（全局索引）。
+        // 选中面的三个顶点也会标红，但那是在绘制时临时并集，不存这里。
+        private readonly HashSet<int> _recvVerts = new HashSet<int>();
+        /// <summary>本材质用到的全局顶点索引 -> UV 坐标（标红 / 过滤接收结果用）。</summary>
+        private Dictionary<int, (float u, float v)> _vertUv = new Dictionary<int, (float u, float v)>();
+
         // UV 几何缓存（未选中的面 + 顶点记号），只在换材质/改选区时重建，
         // 这样缩放时只改线宽，不必重新构建上千个三角面。
         private StreamGeometry _geoAllCache, _geoDotsCache;
@@ -229,6 +235,10 @@ namespace TextureGrade.WpfUI
             BtnClearSel.Click += (s, e) => ClearUVSelection();
             // 对比原图：用「切换」而不是「按住」，避免按住时与画布操作互相干扰
             BtnCompare.Click += (s, e) => SetCompareOriginal(!_compareMode);
+            BtnRecvVerts.Click += (s, e) => ReceiveSelectedVertices();
+            BtnSendVerts.Click += (s, e) => SendSelectedVertices();
+            LocTip(BtnRecvVerts, "Tip.RecvVerts");
+            LocTip(BtnSendVerts, "Tip.SendVerts");
 
             BuildRightPanel();
             RefreshPresetList();
@@ -301,6 +311,8 @@ namespace TextureGrade.WpfUI
             BtnIsland.Content = L.T("Btn.Island");
             BtnClearSel.Content = L.T("Btn.ClearSel");
             BtnCompare.Content = L.T("Btn.Compare");
+            BtnRecvVerts.Content = L.T("Btn.RecvVerts");
+            BtnSendVerts.Content = L.T("Btn.SendVerts");
 
             SetPanMode(_mode == ToolMode.Pan);   // 模式按钮上是「下一个模式」的名字，也要跟着换
             SetReadout(null);
@@ -394,10 +406,57 @@ namespace TextureGrade.WpfUI
 
         public void ClearUVSelection()
         {
-            if (_selectedTris.Count == 0) { Status(L.T("St.NoSelection")); return; }
+            if (_selectedTris.Count == 0 && _recvVerts.Count == 0) { Status(L.T("St.NoSelection")); return; }
             _selectedTris.Clear();
+            _recvVerts.Clear();
             _lastPickedTri = -1;
             AfterSelectionChanged(L.T("St.Cleared"));
+        }
+
+        /// <summary>
+        /// 接收选择顶点（仿 UVEditor）：取 PMXEditor 3D 视图当前选中的顶点，
+        /// 只保留本材质用到的那些，在 UV 预览里标红。
+        /// </summary>
+        public void ReceiveSelectedVertices()
+        {
+            if (_currentMatIndex < 0) { Status(L.T("St.NeedMaterial")); return; }
+            try
+            {
+                int[] all = _bridge.GetPmxSelectedVertices();
+                _recvVerts.Clear();
+                foreach (int v in all)
+                    if (_vertUv.ContainsKey(v)) _recvVerts.Add(v);
+
+                DrawUV(_currentMatIndex);
+                Status(_recvVerts.Count > 0
+                    ? L.F("St.RecvVertsFmt", _recvVerts.Count, all.Length)
+                    : L.T("St.RecvVertsNone"));
+            }
+            catch (Exception ex)
+            {
+                Status(L.F("St.RecvVertsFail", ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// 发送选择顶点（仿 UVEditor）：把 UV 预览里标红的顶点
+        /// （选中面的顶点 ∪ 接收到的顶点）设为 PMXEditor 3D 视图的选中顶点。
+        /// </summary>
+        public void SendSelectedVertices()
+        {
+            if (_currentMatIndex < 0) { Status(L.T("St.NeedMaterial")); return; }
+            var marked = new List<int>(MarkedVertices());
+            if (marked.Count == 0) { Status(L.T("St.SendVertsNone")); return; }
+            marked.Sort();
+            try
+            {
+                _bridge.SetPmxSelectedVertices(marked.ToArray());
+                Status(L.F("St.SendVertsFmt", marked.Count));
+            }
+            catch (Exception ex)
+            {
+                Status(L.F("St.SendVertsFail", ex.Message));
+            }
         }
 
         public void SelectAllUv()
@@ -1183,11 +1242,18 @@ namespace TextureGrade.WpfUI
             _currentMatIndex = m.Index;
             _currentAbsOriginal = m.TexAbsPath;
             _selectedTris.Clear();
+            _recvVerts.Clear();
             _lastPickedTri = -1;
             _maskCache = null;
+            _vertUv = new Dictionary<int, (float u, float v)>();
             _tris = new List<UvTri>();
-            foreach (var t in _bridge.GetUVTriangles(m.Index))
-                _tris.Add(new UvTri(t.u1, t.v1, t.u2, t.v2, t.u3, t.v3));
+            foreach (var t in _bridge.GetUVTrianglesWithIndices(m.Index))
+            {
+                _tris.Add(new UvTri(t.u1, t.v1, t.u2, t.v2, t.u3, t.v3, t.i1, t.i2, t.i3));
+                if (!_vertUv.ContainsKey(t.i1)) _vertUv[t.i1] = (t.u1, t.v1);
+                if (!_vertUv.ContainsKey(t.i2)) _vertUv[t.i2] = (t.u2, t.v2);
+                if (!_vertUv.ContainsKey(t.i3)) _vertUv[t.i3] = (t.u3, t.v3);
+            }
             InvalidateGeo();
             BuildIslands();
 
@@ -2416,7 +2482,8 @@ namespace TextureGrade.WpfUI
                 if (needDots)
                 {
                     double r = Math.Max(0.9, 2.4 / Math.Max(_zoom, 1e-6));
-                    var geoDots = new StreamGeometry();
+                    // Nonzero：UV 重叠的顶点菱形会互相重叠，EvenOdd 会把重叠区挖成洞
+                    var geoDots = new StreamGeometry { FillRule = FillRule.Nonzero };
                     using (var ctx = geoDots.Open())
                     {
                         for (int i = 0; i < _tris.Count; i++)
@@ -2459,6 +2526,54 @@ namespace TextureGrade.WpfUI
             // 3) UV 顶点记号
             if (_geoDotsCache != null)
                 UvCanvas.Children.Add(new System.Windows.Shapes.Path { Data = _geoDotsCache, Fill = dotBrush });
+
+            // 4) 选中的顶点：红色标识。
+            //    ⚠️ 必须用 Nonzero 填充：PMX 模型常有 UV 位置重叠的顶点（镜像/共位），
+            //    菱形互相重叠时 EvenOdd 会把重叠区挖成洞，看起来像「漏标」。
+            //    选中面的角点直接用面自身的 UV 画（不经过索引→UV 字典），保证一个不漏。
+            var markedGeo = new StreamGeometry { FillRule = FillRule.Nonzero };
+            using (var ctx = markedGeo.Open())
+            {
+                double r = Math.Max(2.8, 6.0 / Math.Max(_zoom, 1e-6));   // 屏幕上约 6px，不随缩放变大变小
+                foreach (int ti in _selectedTris)
+                {
+                    if (ti < 0 || ti >= _tris.Count) continue;
+                    var t = _tris[ti];
+                    Dot(ctx, t.u1, t.v1, r);
+                    Dot(ctx, t.u2, t.v2, r);
+                    Dot(ctx, t.u3, t.v3, r);
+                }
+                foreach (int vi in _recvVerts)                           // 接收来的顶点（可能不在选中面里）
+                    if (_vertUv.TryGetValue(vi, out var uv)) Dot(ctx, uv.u, uv.v, r);
+            }
+            markedGeo.Freeze();
+            if (markedGeo.Bounds.Width > 0)
+            {
+                UvCanvas.Children.Add(new System.Windows.Shapes.Path
+                {
+                    Data = markedGeo,
+                    Fill = new SolidColorBrush(Color.FromArgb(235, 255, 42, 42)),
+                    Stroke = new SolidColorBrush(Color.FromArgb(255, 110, 0, 0)),
+                    StrokeThickness = Math.Max(0.4, 0.8 / Math.Max(_zoom, 1e-6))
+                });
+            }
+        }
+
+        /// <summary>
+        /// 当前应标红的顶点集合（全局索引）＝ 选中三角面的所有角点 ∪ 接收到的顶点。
+        /// </summary>
+        private HashSet<int> MarkedVertices()
+        {
+            var set = new HashSet<int>(_recvVerts);
+            foreach (int ti in _selectedTris)
+            {
+                if (ti < 0 || ti >= _tris.Count) continue;
+                var t = _tris[ti];
+                if (t.i1 >= 0) set.Add(t.i1);
+                if (t.i2 >= 0) set.Add(t.i2);
+                if (t.i3 >= 0) set.Add(t.i3);
+            }
+            return set;
         }
 
         private void AppendTriangle(StreamGeometryContext ctx, UvTri t)
@@ -2552,8 +2667,16 @@ namespace TextureGrade.WpfUI
         private struct UvTri
         {
             public readonly float u1, v1, u2, v2, u3, v3;
+            /// <summary>三个角点的全局顶点索引（-1 = 未知，如蒙版栅格化场景）。</summary>
+            public readonly int i1, i2, i3;
             public UvTri(float u1, float v1, float u2, float v2, float u3, float v3)
-            { this.u1 = u1; this.v1 = v1; this.u2 = u2; this.v2 = v2; this.u3 = u3; this.v3 = v3; }
+                : this(u1, v1, u2, v2, u3, v3, -1, -1, -1) { }
+            public UvTri(float u1, float v1, float u2, float v2, float u3, float v3,
+                         int i1, int i2, int i3)
+            {
+                this.u1 = u1; this.v1 = v1; this.u2 = u2; this.v2 = v2; this.u3 = u3; this.v3 = v3;
+                this.i1 = i1; this.i2 = i2; this.i3 = i3;
+            }
         }
 
         // ================= 滑块定义 =================

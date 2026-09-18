@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -194,10 +194,10 @@ namespace TextureGrade.Localization
 
             add("About.Title", "About Texture Grade", "关于 Texture Grade", "關於 Texture Grade", "Texture Grade について");
             add("About.Body",
-                "Texture Grade — PMX texture grading plug-in\nNon-destructive grading like Lightroom / Camera Raw.\n\nSupported formats: PNG / JPG / BMP / GIF / TIFF / TGA / DDS (DXT1,3,5)\n\nversion: 1.0.0\nby: SaraKale",
-                "Texture Grade — PMX 贴图调色插件\n仿 Lightroom / Camera Raw 的非破坏式贴图调色。\n\n贴图格式支持：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.0\nby:SaraKale",
-                "Texture Grade — PMX 貼圖調色外掛\n仿 Lightroom / Camera Raw 的非破壞式貼圖調色。\n\n貼圖格式支援：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.0\nby:SaraKale",
-                "Texture Grade — PMX テクスチャ調整プラグイン\nLightroom / Camera Raw 風の非破壊調色。\n\n対応形式：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.0\nby:SaraKale");
+                "Texture Grade — PMX texture grading plug-in\nNon-destructive grading like Lightroom / Camera Raw.\n\nSupported formats: PNG / JPG / BMP / GIF / TIFF / TGA / DDS (DXT1,3,5)\n\nversion: 1.0.1\nby: SaraKale",
+                "Texture Grade — PMX 贴图调色插件\n仿 Lightroom / Camera Raw 的非破坏式贴图调色。\n\n贴图格式支持：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.1\nby:SaraKale",
+                "Texture Grade — PMX 貼圖調色外掛\n仿 Lightroom / Camera Raw 的非破壞式貼圖調色。\n\n貼圖格式支援：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.1\nby:SaraKale",
+                "Texture Grade — PMX テクスチャ調整プラグイン\nLightroom / Camera Raw 風の非破壊調色。\n\n対応形式：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.1\nby:SaraKale");
 
             // ---------------- 主界面固定文案 ----------------
             add("Title.Preview", "Texture + UV Preview", "贴图 + UV 预览", "貼圖 + UV 預覽", "テクスチャ + UV プレビュー");
@@ -221,6 +221,16 @@ namespace TextureGrade.Localization
             add("Btn.Island", "Select Island", "选连通块", "選連通塊", "アイランド選択");
             add("Btn.ClearSel", "Clear Selection", "清空选区", "清除選取", "選択解除");
             add("Btn.Compare", "Compare Original", "对比原图", "對比原圖", "元画像比較");
+            add("Btn.RecvVerts", "Recv Vertices", "接收选择顶点", "接收選取頂點", "選択頂点を受信");
+            add("Btn.SendVerts", "Send Vertices", "发送选择顶点", "傳送選取頂點", "選択頂点を送信");
+            add("Tip.RecvVerts", "Read the vertices currently selected in the PMXEditor 3D view and mark them red here (only those used by this material)",
+                                "读取 PMXEditor 3D 视图当前选中的顶点，在本面板标红（只保留本材质用到的）",
+                                "讀取 PMXEditor 3D 視圖目前選取的頂點，在本面板標紅（只保留本材質用到的）",
+                                "PMXエディタの3Dビューで選択中の頂点を読み込み、ここで赤く表示（この材質で使われる分のみ）");
+            add("Tip.SendVerts", "Send the red-marked vertices (face corners + received ones) back to the PMXEditor 3D view as its selection",
+                                 "把本面板标红的顶点（选中面的顶点 + 接收来的）发送给 PMXEditor 3D 视图作为选中顶点",
+                                 "把本面板標紅的頂點（選取面的頂點 + 接收來的）傳送給 PMXEditor 3D 視圖作為選取頂點",
+                                 "赤表示中の頂点（選択面の頂点＋受信分）を3Dビューの選択頂点として送信");
 
             add("Hint.PickMaterial", "Please select a material with a texture.", "请选择一个带贴图的材质。", "請選擇一個帶貼圖的材質。", "テクスチャ付きの材質を選択してください。");
             add("Hint.Zoom", "Zoom {0:F0}%", "缩放 {0:F0}%", "縮放 {0:F0}%", "ズーム {0:F0}%");
@@ -364,6 +374,21 @@ namespace TextureGrade.Localization
             add("St.NoTexture", "This material has no texture (Tex is empty)", "该材质没有贴图 (Tex 为空)", "該材質沒有貼圖 (Tex 為空)", "この材質にテクスチャはありません (Tex が空)");
             add("St.NoSelection", "There is no UV selection", "当前没有 UV 选区", "目前沒有 UV 選取", "UV 選択がありません");
             add("St.Cleared", "UV selection cleared (grading now applies to the whole texture)", "已清除 UV 选区（调色作用于整张贴图）", "已清除 UV 選取（調色作用於整張貼圖）", "UV 選択を解除（調色はテクスチャ全体に適用）");
+            add("St.RecvVertsFmt", "Received {0} selected vertices from the 3D view (out of {1}, filtered to this material)",
+                                    "已从 3D 视图接收 {0} 个选中顶点（视图共选 {1} 个，已过滤为本材质用到的）",
+                                    "已從 3D 視圖接收 {0} 個選取頂點（視圖共選 {1} 個，已過濾為本材質用到的）",
+                                    "3Dビューから選択頂点を {0} 個受信（ビュー全体 {1} 個のうち、この材質分のみ）");
+            add("St.RecvVertsNone", "No selected vertices in the 3D view (or none belong to this material)",
+                                    "3D 视图当前没有选中顶点（或选中的顶点都不属于本材质）",
+                                    "3D 視圖目前沒有選取頂點（或選取的頂點都不屬於本材質）",
+                                    "3Dビューに選択頂点がない（またはこの材質の頂点がない）");
+            add("St.RecvVertsFail", "Receiving vertices failed: {0}", "接收顶点失败：{0}", "接收頂點失敗：{0}", "頂点の受信に失敗：{0}");
+            add("St.SendVertsNone", "No marked vertices to send — select UV faces or click \"Recv Vertices\" first",
+                                    "没有可发送的顶点 —— 先选 UV 面，或点「接收选择顶点」",
+                                    "沒有可傳送的頂點 —— 先選 UV 面，或點「接收選取頂點」",
+                                    "送信できる頂点がない —— 先に UV 面を選択するか「選択頂点を受信」を押してください");
+            add("St.SendVertsFmt", "Sent {0} vertex indices to the 3D view", "已把 {0} 个顶点索引发送到 3D 视图", "已把 {0} 個頂點索引傳送到 3D 視圖", "{0} 個の頂点インデックスを3Dビューへ送信しました");
+            add("St.SendVertsFail", "Sending vertices failed: {0}", "发送顶点失败：{0}", "傳送頂點失敗：{0}", "頂点の送信に失敗：{0}");
             add("St.NoTris", "This material has no UV triangles", "当前材质没有 UV 三角面", "目前材質沒有 UV 三角面", "この材質に UV 三角面はありません");
             add("St.SelectedAll", "Selected all {0} UV triangles", "已选中全部 {0} 个 UV 三角面", "已選取全部 {0} 個 UV 三角面", "全ての UV 三角面 {0} 枚を選択しました");
             add("St.CompareOn", "Showing the original (compare mode) — your parameters are kept", "正在显示原图（对比模式）—— 调色参数仍然保留", "正在顯示原圖（對比模式）—— 調色參數仍然保留", "元画像を表示中（比較モード）— パラメータは保持されます");
@@ -463,6 +488,10 @@ namespace TextureGrade.Localization
             add("Dlg.AllMaskSkipFmt", "{0} materials have no UV faces and were skipped.\n", "{0} 个材质没有 UV 面，已跳过。\n", "{0} 個材質沒有 UV 面，已跳過。\n", "UV 面のない材質 {0} 件をスキップしました。\n");
             add("Dlg.AllMaskFailFmt", "{0} failed (too large or file in use).\n", "{0} 张导出失败（尺寸过大或文件被占用）。\n", "{0} 張匯出失敗（尺寸過大或檔案被佔用）。\n", "{0} 枚が失敗（サイズが大きすぎる、またはファイルが使用中）。\n");
             add("Err.Title", "TextureGrade Error", "TextureGrade 错误", "TextureGrade 錯誤", "TextureGrade エラー");
+            add("Err.NoModel", "No PMX model is open.\n\nPlease open (or load) a model in PMXEditor first, then run Texture Grade again.",
+                                "还没有打开 PMX 模型。\n\n请先在 PMXEditor 里打开（或载入）一个模型，再运行本插件。",
+                                "尚未開啟 PMX 模型。\n\n請先在 PMXEditor 裡開啟（或載入）一個模型，再執行本外掛。",
+                                "PMX モデルが開かれていません。\n\nPMXエディタでモデルを開いてから、本プラグインを再度実行してください。");
 
             return d;
         }

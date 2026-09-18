@@ -23,6 +23,17 @@ namespace TextureGrade.Bridge
         /// <summary>取某材质的 UV 三角面（左栏线框叠加用）</summary>
         IReadOnlyList<(float u1, float v1, float u2, float v2, float u3, float v3)> GetUVTriangles(int materialIndex);
 
+        /// <summary>
+        /// 同 GetUVTriangles，但附带每个角点的全局顶点索引（顶点选区/发接送收用）。
+        /// </summary>
+        IReadOnlyList<(float u1, float v1, float u2, float v2, float u3, float v3, int i1, int i2, int i3)> GetUVTrianglesWithIndices(int materialIndex);
+
+        /// <summary>取 PMXEditor 3D 视图当前选中的顶点索引（仿 UVEditor「接收选择顶点」）</summary>
+        int[] GetPmxSelectedVertices();
+
+        /// <summary>把顶点索引设为 PMXEditor 3D 视图的当前选中顶点（仿 UVEditor「发送选择顶点」）</summary>
+        void SetPmxSelectedVertices(int[] vertexIndices);
+
         /// <summary>插件关闭时调用：还原未保存的修改并删除全部临时文件</summary>
         void Cleanup();
 

@@ -239,7 +239,9 @@
                         <Button x:Name="BtnMode" Content="平移" Style="{StaticResource TgButton}"/>
                         <Button x:Name="BtnIsland" Content="选连通块" Style="{StaticResource TgButton}"/>
                         <Button x:Name="BtnClearSel" Content="清空选区" Style="{StaticResource TgButton}"/>
-                        <Button x:Name="BtnCompare" Content="对比原图" Style="{StaticResource TgButton}" Margin="0"/>
+                        <Button x:Name="BtnCompare" Content="对比原图" Style="{StaticResource TgButton}"/>
+                        <Button x:Name="BtnRecvVerts" Content="接收选择顶点" Style="{StaticResource TgButton}"/>
+                        <Button x:Name="BtnSendVerts" Content="发送选择顶点" Style="{StaticResource TgButton}" Margin="0"/>
                     </WrapPanel>
 
                     <!-- 直方图（视图菜单可开关；调色后实时更新，用来判断曝光/色彩分布） -->

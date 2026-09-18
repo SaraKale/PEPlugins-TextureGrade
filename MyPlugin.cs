@@ -63,6 +63,16 @@ namespace TextureGrade
         {
             try
             {
+                // 没打开模型时 PMX.FilePath 为空，插件内部读贴图路径会直接崩，
+                // 这里先拦截并友好提示（模型必须先打开才能做贴图调色）。
+                var pmx = args.Host.Connector.Pmx.GetCurrentState();
+                if (pmx == null || string.IsNullOrEmpty(pmx.FilePath))
+                {
+                    MessageBox.Show(L.T("Err.NoModel"), L.T("Err.Title"),
+                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
                 if (_form == null || _form.IsDisposed)
                 {
                     _form = new PluginForm(args.Host);
