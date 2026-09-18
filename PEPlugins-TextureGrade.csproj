@@ -1,0 +1,89 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- PMXEditor 插件基于 .NET Framework 4.8；WinForms 外壳 + WPF 内容 -->
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <OutputType>Library</OutputType>
+    <AssemblyName>PEPlugins-TextureGrade</AssemblyName>
+    <RootNamespace>TextureGrade</RootNamespace>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyTitle>Texture Grade</AssemblyTitle>
+    <Description>PMXEditor TextureGrade Plugins</Description>
+    <FileVersion>1.0.0</FileVersion>
+    <!--
+      ⚠️ 不要在这里写 <AssemblyVersion>！
+      WPF 的 MarkupCompilePass1 在 GenerateAssemblyInfo 之前跑，它会把「显式声明的 $(AssemblyVersion)」
+      直接烤进 XAML 的 pack URI（/PEPlugins-TextureGrade;V1.0.0;component/wpfui/mainpanel.xaml）。
+      运行时 BaseUriHelper 就会走「带版本身份」的严格绑定路径 Assembly.Load("..., Version=1.0.0")，
+      而插件 DLL 是被 PMXEditor 从 _plugin 子目录 LoadFrom 进来的、不在 AppBase 探测路径内，
+      于是抛 FileNotFoundException（MainPanel.InitializeComponent 处）。
+      不写 AssemblyVersion 时 URI 是 /PEPlugins-TextureGrade;component/...，
+      WPF 改为按简单名扫描已加载程序集，插件即可正常加载。
+      想标版本号用 FileVersion（上面那个），它不会影响 URI。
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="image\**" />
+    <Compile Remove="图片介绍\**" />
+    <EmbeddedResource Remove="image\**" />
+    <EmbeddedResource Remove="图片介绍\**" />
+    <None Remove="image\**" />
+    <None Remove="图片介绍\**" />
+    <Page Remove="image\**" />
+    <Page Remove="图片介绍\**" />
+  </ItemGroup>
+
+  <!-- 操作说明：随编译输出到插件目录，用户可直接改这个 txt，不用重新编译 -->
+
+  <ItemGroup>
+    <None Remove="PE贴图调色插件笔记.txt" />
+    <None Remove="ReadMe.md" />
+    <None Remove="ReadMe_English.txt" />
+    <None Remove="ReadMe_ja.md" />
+    <None Remove="ReadMe_sc.md" />
+    <None Remove="ReadMe_tc.md" />
+    <None Remove="ReadMe_日本語.txt" />
+    <None Remove="ReadMe_简体中文.txt" />
+    <None Remove="ReadMe_繁體中文.txt" />
+    <None Remove="Snipaste_2026-09-16_20-59-31.jpg" />
+    <None Remove="Snipaste_2026-09-16_21-37-04.jpg" />
+    <None Remove="TextureGrade_Operation.txt" />
+    <None Remove="TextureGrade_插件界面布局.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      PEPlugin.dll 来自你的 PMXEditor 安装目录。
+      把 PEPlugin.dll 复制到本项目的 lib\ 文件夹，或把下面的 HintPath 改成你的实际路径。
+      例如: C:\Program Files (x86)\PMXEditor\PEPlugin.dll
+    -->
+    <Reference Include="PEPlugin">
+      <HintPath>..\..\PmxEditor_0275\Lib\PEPlugin\PEPlugin.dll</HintPath>
+    </Reference>
+    <Reference Include="PmxEditorCore">
+      <HintPath>..\..\PmxEditor_0275\Lib\System\PmxEditorCore.dll</HintPath>
+    </Reference>
+    <Reference Include="PmxEditorLib">
+      <HintPath>..\..\PmxEditor_0275\Lib\System\PmxEditorLib.dll</HintPath>
+    </Reference>
+    <Reference Include="PmxLib">
+      <HintPath>..\..\PmxEditor_0275\Lib\System\PmxLib.dll</HintPath>
+    </Reference>
+    <Reference Include="SlimDX">
+      <HintPath>..\..\PmxEditor_0275\Lib\SlimDX\x86\SlimDX.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <!--
+    贴图解码不依赖任何 NuGet 包：
+      - PNG/JPG/BMP 由 net48 自带的 GDI+ (System.Drawing) 处理
+      - TGA 由项目内手写的极简解码器 (TextureIO/TgaReader.cs) 处理
+    因此本项目无需 NuGet 还原即可编译。DDS 等压缩格式请先用工具转成 PNG/TGA。
+  -->
+
+</Project>
