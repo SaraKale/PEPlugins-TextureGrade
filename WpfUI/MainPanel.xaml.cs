@@ -122,6 +122,22 @@ namespace TextureGrade.WpfUI
         private readonly Dictionary<int, Dictionary<string, double>> _matParams
             = new Dictionary<int, Dictionary<string, double>>();
 
+        // 分材质保存的 UV 选区：材质索引 -> 选区快照。
+        // 没有这个表的话，A 材质做了局部 UV 调色 -> 切到 B -> 再切回 A，选区会被清掉，
+        // 于是同一套参数就变成作用在整张贴图上（看起来像"局部调色失效"）。
+        private readonly Dictionary<int, MatSelection> _matSelection = new Dictionary<int, MatSelection>();
+
+        /// <summary>一个材质的 UV 选区快照（选中的三角面 + 从 3D 视图接收的顶点）。</summary>
+        private sealed class MatSelection
+        {
+            /// <summary>记录时该材质的三角面总数；模型被改过（面数变了）就判定这份快照失效。</summary>
+            public int TriCount;
+            public readonly HashSet<int> Tris = new HashSet<int>();
+            public readonly HashSet<int> Verts = new HashSet<int>();
+            /// <summary>最后点过的那个面（「选连通块」的种子）。</summary>
+            public int LastPicked = -1;
+        }
+
         // 连通 UV 块（把共享 UV 顶点的三角面聚成块，用于「像 Blender 按 L 选一整块」）
         private int[] _triIsland = new int[0];
         private int _islandCount;
@@ -191,6 +207,14 @@ namespace TextureGrade.WpfUI
         // 「已修改」徽章
         private readonly HashSet<int> _pushedMats = new HashSet<int>();
 
+        // 预设列表：排序方式 + 排序下拉框（换语言时要重填选项）
+        private PresetStore.PresetSort _presetSort = PresetStore.PresetSort.Name;
+        private Button _btnPresetSort;
+
+        // 「另存为新贴图…」对话框记住的上次选择，下次打开时沿用
+        private TextureIO.TextureFormat _lastSaveFormat = TextureIO.TextureFormat.Png;
+        private int _lastJpegQuality = 92;
+
         public MainPanel(IPMDBridge bridge)
         {
             InitializeComponent();
@@ -208,6 +232,7 @@ namespace TextureGrade.WpfUI
             };
 
             Loaded += (s, e) => { if (_autoFit) FitView(); UpdateHint(); DrawHistogram(); };
+            PreviewKeyDown += MainPanel_PreviewKeyDown;   // Ctrl+I 反选 / Ctrl+A 全选
             ViewRoot.SizeChanged += (s, e) => { if (_autoFit) FitView(); };
             HistogramCanvas.SizeChanged += (s, e) => DrawHistogram();
 
@@ -467,6 +492,40 @@ namespace TextureGrade.WpfUI
             AfterSelectionChanged(L.F("St.SelectedAll", _tris.Count));
         }
 
+        /// <summary>
+        /// 面板内快捷键：Ctrl+I 反选、Ctrl+A 全选 UV 面。
+        /// 焦点在文本框里时不接管，否则会抢掉「全选文字」。
+        /// </summary>
+        private void MainPanel_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.OriginalSource is System.Windows.Controls.Primitives.TextBoxBase) return;
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == 0) return;
+
+            if (e.Key == Key.I) { InvertUVSelection(); e.Handled = true; }
+            else if (e.Key == Key.A) { SelectAllUv(); e.Handled = true; }
+        }
+
+        /// <summary>
+        /// 反选：当前没被选中的 UV 三角面变成选中，已选中的取消。
+        /// 用来「选中除某块之外的全部」——先选那块再反选即可。
+        /// 从 3D 视图接收的顶点（_recvVerts）只做显示标记、不参与蒙版，这里保持原样。
+        /// </summary>
+        public void InvertUVSelection()
+        {
+            if (_tris.Count == 0) { Status(L.T("St.NoTris")); return; }
+
+            var inv = new HashSet<int>();
+            for (int i = 0; i < _tris.Count; i++)
+                if (!_selectedTris.Contains(i)) inv.Add(i);
+
+            _selectedTris.Clear();
+            foreach (int i in inv) _selectedTris.Add(i);
+
+            AfterSelectionChanged(_selectedTris.Count > 0
+                ? L.F("St.InvertedFmt", _selectedTris.Count, _tris.Count)
+                : L.T("St.InvertedEmpty"));
+        }
+
         public void FitView()
         {
             double vw = ViewRoot.ActualWidth, vh = ViewRoot.ActualHeight;
@@ -591,9 +650,16 @@ namespace TextureGrade.WpfUI
             var btnRow = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
             btnRow.Children.Add(MakeSmallButtonLoc("Preset.Apply", ApplySelectedPreset));
             btnRow.Children.Add(MakeSmallButtonLoc("Preset.Delete", DeleteSelectedPreset));
+            btnRow.Children.Add(MakeSmallButtonLoc("Preset.Rename", RenameSelectedPreset));
+            // 排序按钮的文字随当前排序方式变化（不用 ComboBox：ElementHost 里下拉弹层渲染有问题）
+            _btnPresetSort = MakeSmallButton("", CyclePresetSort);
+            btnRow.Children.Add(_btnPresetSort);
+            btnRow.Children.Add(MakeSmallButtonLoc("Preset.Up", () => MoveSelectedPreset(-1)));
+            btnRow.Children.Add(MakeSmallButtonLoc("Preset.Down", () => MoveSelectedPreset(1)));
             btnRow.Children.Add(MakeSmallButtonLoc("Preset.Refresh", RefreshPresetList));
             btnRow.Children.Add(MakeSmallButtonLoc("Preset.OpenFolder", OpenPresetFolder));
             root.Children.Add(btnRow);
+            _locActions.Add(UpdatePresetSortButton);
 
             var hint = new TextBlock
             {
@@ -641,10 +707,98 @@ namespace TextureGrade.WpfUI
         {
             if (_presetList == null) return;
             var keep = _presetList.SelectedItem as string;
-            var names = PresetStore.List();
+            var names = PresetStore.List(_presetSort);
             _presetList.ItemsSource = null;
             _presetList.ItemsSource = names;
             if (!string.IsNullOrEmpty(keep) && names.Contains(keep)) _presetList.SelectedItem = keep;
+        }
+
+        /// <summary>排序按钮文字：把当前排序方式写进按钮，点一次切到下一档。</summary>
+        private void UpdatePresetSortButton()
+        {
+            if (_btnPresetSort == null) return;
+            string mode;
+            switch (_presetSort)
+            {
+                case PresetStore.PresetSort.Time: mode = L.T("Preset.SortTime"); break;
+                case PresetStore.PresetSort.Custom: mode = L.T("Preset.SortCustom"); break;
+                default: mode = L.T("Preset.SortName"); break;
+            }
+            _btnPresetSort.Content = L.F("Preset.SortFmt", mode);
+        }
+
+        private void CyclePresetSort()
+        {
+            _presetSort = _presetSort == PresetStore.PresetSort.Name
+                ? PresetStore.PresetSort.Time
+                : _presetSort == PresetStore.PresetSort.Time
+                    ? PresetStore.PresetSort.Custom
+                    : PresetStore.PresetSort.Name;
+            UpdatePresetSortButton();
+            RefreshPresetList();
+            Status(L.F("Preset.Sorted", _btnPresetSort == null ? "" : _btnPresetSort.Content));
+        }
+
+        /// <summary>给选中的预设改名（内容不动，只换文件名）。</summary>
+        private void RenameSelectedPreset()
+        {
+            var name = _presetList == null ? null : _presetList.SelectedItem as string;
+            if (string.IsNullOrEmpty(name)) { Status(L.T("Preset.SelectFirst")); return; }
+
+            string input = InputDialog.Prompt(DlgOwner(), L.T("Preset.RenameTitle"), L.F("Preset.RenamePrompt", name), name);
+            if (string.IsNullOrEmpty(input)) return;                 // 取消或空
+            if (string.Equals(input, name, StringComparison.OrdinalIgnoreCase)) return;
+
+            if (PresetStore.Exists(input))
+            {
+                System.Windows.Forms.MessageBox.Show(
+                    L.F("Preset.RenameDup", input), L.T("Preset.RenameTitle"),
+                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!PresetStore.Rename(name, input))
+            {
+                Status(L.F("Preset.RenameFail", name));
+                return;
+            }
+            RefreshPresetList();
+            if (_presetList != null) _presetList.SelectedItem = input;
+            Status(L.F("Preset.Renamed", name, input));
+        }
+
+        /// <summary>
+        /// 上移 / 下移选中的预设。顺序写进 presets\order.txt，并自动切到「手动顺序」，
+        /// 否则按名称排的话手动顺序是无效的。
+        /// </summary>
+        private void MoveSelectedPreset(int delta)
+        {
+            var name = _presetList == null ? null : _presetList.SelectedItem as string;
+            if (string.IsNullOrEmpty(name)) { Status(L.T("Preset.SelectFirst")); return; }
+
+            var names = PresetStore.List(_presetSort);
+            int i = names.IndexOf(name);
+            if (i < 0) return;
+            int j = i + delta;
+            if (j < 0 || j >= names.Count)
+            {
+                Status(delta < 0 ? L.T("Preset.AtTop") : L.T("Preset.AtBottom"));
+                return;
+            }
+
+            names[i] = names[j];
+            names[j] = name;
+            PresetStore.SaveOrder(names);
+
+            // 手动调过顺序后，排序方式必须切到「手动顺序」，不然看不出效果
+            if (_presetSort != PresetStore.PresetSort.Custom)
+            {
+                _presetSort = PresetStore.PresetSort.Custom;
+                UpdatePresetSortButton();
+            }
+            RefreshPresetList();
+            if (_presetList != null) _presetList.SelectedItem = name;
+            Status(L.F("Preset.Moved", name, j + 1, names.Count));
         }
 
         private void SavePresetFromBox()
@@ -909,7 +1063,13 @@ namespace TextureGrade.WpfUI
             if (_syncLab) return;   // 由 SyncLabFromSettings 程序化改勾选状态时，不当作"用户操作"
 
             _syncLab = true;
-            try { Settings["LabUnlock"] = unlock ? 1 : 0; }
+            try
+            {
+                Settings["LabUnlock"] = unlock ? 1 : 0;
+                // 目标亮度只有在「解除锁定」时才参与运算，所以到这一刻才需要落地成具体数值。
+                // 放在这里（用户主动取消勾选时）而不是 SyncLabFromSettings 里，避免「选中材质即已修改」。
+                if (unlock && Settings["LabTargetL"] <= 0) Settings["LabTargetL"] = _refL;
+            }
             finally { _syncLab = false; }
 
             SyncLabFromSettings();
@@ -925,8 +1085,10 @@ namespace TextureGrade.WpfUI
             try
             {
                 bool locked = Settings["LabUnlock"] < 0.5;
+                // 只把「未设置时的显示锚点」当成默认值用，**不要写回 Settings** ——
+                // 一旦写回，光是选中一个材质就会被判定为「有非默认参数」而亮起「已修改」徽章。
                 double tl = Settings["LabTargetL"];
-                if (tl <= 0) { tl = _refL; Settings["LabTargetL"] = _refL; }   // 未设置 -> 用画面参考亮度
+                if (tl <= 0) tl = _refL;
                 double drawL = locked ? _refL : tl;
                 _labWheel.SetState(drawL, locked, Settings["LabTargetA"], Settings["LabTargetB"]);
                 if (_labLockBox != null) _labLockBox.IsChecked = locked;
@@ -1235,8 +1397,9 @@ namespace TextureGrade.WpfUI
         {
             if (!(_materialList.SelectedItem is MaterialRow row)) return;
 
-            // 切换前先把「上一个材质」的滑块值存起来（每个材质独立保存参数）
+            // 切换前先把「上一个材质」的滑块值和 UV 选区存起来（每个材质独立保存）
             SaveCurrentParams();
+            SaveCurrentSelection();
 
             var m = row.Info;
             _currentMatIndex = m.Index;
@@ -1254,6 +1417,8 @@ namespace TextureGrade.WpfUI
                 if (!_vertUv.ContainsKey(t.i2)) _vertUv[t.i2] = (t.u2, t.v2);
                 if (!_vertUv.ContainsKey(t.i3)) _vertUv[t.i3] = (t.u3, t.v3);
             }
+            // 换回来时把该材质上次的选区装回去（模型改过则自动丢弃）
+            int restored = RestoreSelection(m.Index) ? _selectedTris.Count : 0;
             InvalidateGeo();
             BuildIslands();
 
@@ -1270,7 +1435,9 @@ namespace TextureGrade.WpfUI
                     ResetHistory();
                     FitView();
                     RunGradeAsync();
-                    Status(L.F("St.MatInfoFmt", m.Display, w, h, _tris.Count, _islandCount));
+                    Status(restored > 0
+                        ? L.F("St.SelRestoredFmt", restored)
+                        : L.F("St.MatInfoFmt", m.Display, w, h, _tris.Count, _islandCount));
                 }
                 catch (Exception ex)
                 {
@@ -1300,6 +1467,41 @@ namespace TextureGrade.WpfUI
             else _matParams[_currentMatIndex] = snap;
         }
 
+        // ================= 分材质保存 UV 选区 =================
+        /// <summary>把当前材质的 UV 选区存下来（切材质/重读时不会丢）。空选区不占表项。</summary>
+        private void SaveCurrentSelection()
+        {
+            if (_currentMatIndex < 0) return;
+            var sel = new MatSelection { TriCount = _tris.Count, LastPicked = _lastPickedTri };
+            foreach (int t in _selectedTris) sel.Tris.Add(t);
+            foreach (int v in _recvVerts) sel.Verts.Add(v);
+            if (sel.Tris.Count == 0 && sel.Verts.Count == 0) _matSelection.Remove(_currentMatIndex);
+            else _matSelection[_currentMatIndex] = sel;
+        }
+
+        /// <summary>
+        /// 恢复该材质上一次的 UV 选区。
+        /// 只有当三角面数与记录时完全一致才恢复 —— 面数变了说明模型被改过，
+        /// 面索引已经不指向原来的面了，此时宁可丢掉选区，也不能把调色套到错误的地方。
+        /// </summary>
+        private bool RestoreSelection(int matIndex)
+        {
+            MatSelection sel;
+            if (!_matSelection.TryGetValue(matIndex, out sel)) return false;
+            if (sel.TriCount != _tris.Count || sel.Tris.Count == 0)
+            {
+                if (sel.TriCount != _tris.Count) _matSelection.Remove(matIndex);
+                return false;
+            }
+            foreach (int t in sel.Tris)
+                if (t >= 0 && t < _tris.Count) _selectedTris.Add(t);
+            // 接收顶点：只保留本材质仍在用的（模型改过时全局索引可能已失效）
+            foreach (int v in sel.Verts)
+                if (_vertUv.ContainsKey(v)) _recvVerts.Add(v);
+            if (sel.LastPicked >= 0 && sel.LastPicked < _tris.Count) _lastPickedTri = sel.LastPicked;
+            return _selectedTris.Count > 0;
+        }
+
         /// <summary>把某材质之前保存的参数恢复到滑块上（没有记录则全部归零）。</summary>
         private void LoadParamsFor(int matIndex)
         {
@@ -1314,10 +1516,6 @@ namespace TextureGrade.WpfUI
             finally { _suppressHistory = false; _syncLab = false; }
             SyncLabFromSettings();
         }
-
-        /// <summary>当前材质是否保存过非默认参数。</summary>
-        private bool CurrentHasParams()
-            => _currentMatIndex >= 0 && _matParams.TryGetValue(_currentMatIndex, out var d) && !IsAllZero(d);
 
         /// <summary>把一份参数快照应用到当前材质（预设用）。</summary>
         private void ApplyParams(Dictionary<string, double> values)
@@ -1563,15 +1761,52 @@ namespace TextureGrade.WpfUI
         {
             if (_originalBytes == null || _currentMatIndex < 0 || _currentAbsOriginal == null)
             { Status(L.T("St.NeedTexturedMaterial")); return; }
-            byte[] grad = ComputeGraded();
-            string tmp = TextureNaming.PreviewPath(_currentAbsOriginal, ++_previewCounter);
-            TextureLoader.SavePng(tmp, grad, _w, _h);
-            _bridge.ApplyPreview(_currentMatIndex, tmp);
-            _pushedMats.Add(_currentMatIndex);
-            MarkCurrentModified();
-            RefreshCurrentThumbnail(tmp);   // 列表缩略图同步成推送到模型的样子
-            Status(L.F("St.RefreshedFmt", System.IO.Path.GetFileName(tmp)));
+            try
+            {
+                byte[] grad = ComputeGraded();
+                bool fallback;
+                string tmp = WritePreviewFile(grad, out fallback);
+                _bridge.ApplyPreview(_currentMatIndex, tmp);
+                _pushedMats.Add(_currentMatIndex);
+                MarkCurrentModified();
+                RefreshCurrentThumbnail(tmp);   // 列表缩略图同步成推送到模型的样子
+                Status(fallback
+                    ? L.F("St.PreviewFallbackFmt", tmp)
+                    : L.F("St.RefreshedFmt", System.IO.Path.GetFileName(tmp)));
+            }
+            catch (Exception ex)
+            {
+                // 以前这里一抛异常就是 WPF 未处理异常（看上去像"点了没反应"），现在至少说清楚原因
+                Status(L.F("St.RefreshFailFmt", ex.Message));
+            }
         }
+
+        /// <summary>
+        /// 写出临时预览贴图：优先放在原贴图旁边；那个目录不可写时退回系统临时目录。
+        /// 兜底是为了让「刷新模型」不会因为一次 IOException 就彻底没反应。
+        /// </summary>
+        private string WritePreviewFile(byte[] grad, out bool usedFallback)
+        {
+            usedFallback = false;
+            string tmp = TextureNaming.PreviewPath(_currentAbsOriginal, ++_previewCounter);
+            try
+            {
+                TextureLoader.SavePng(tmp, grad, _w, _h);
+                if (System.IO.File.Exists(tmp)) return tmp;
+            }
+            catch { /* 原贴图目录写不了 -> 走下面的兜底目录 */ }
+
+            usedFallback = true;
+            tmp = TextureNaming.FallbackPreviewPath(_currentAbsOriginal, _previewCounter);
+            TextureLoader.SavePng(tmp, grad, _w, _h);
+            return tmp;
+        }
+
+        /// <summary>
+        /// 弹出 WinForms 对话框时用的 owner。
+        /// 不给 owner 的话对话框是独立顶层窗口，可能跑到主窗口后面 —— 用户会以为「点了没反应」。
+        /// </summary>
+        private System.Windows.Forms.IWin32Window DlgOwner() => Win32Owner.From(this);
 
         public void SaveNew()
         {
@@ -1585,6 +1820,130 @@ namespace TextureGrade.WpfUI
             MarkCurrentModified();
             RefreshCurrentThumbnail(newPath);
             Status(L.F("St.SavedNewFmt", System.IO.Path.GetFileName(newPath)));
+        }
+
+        /// <summary>
+        /// 「另存为新贴图（选格式/尺寸）…」：弹出格式/尺寸/质量选项，写好后让材质指向新文件。
+        /// 工具栏那个「另存」按钮仍然是「PNG 原尺寸」的一键保存，两者不冲突。
+        /// </summary>
+        public void SaveNewAs()
+        {
+            if (_originalBytes == null || _currentMatIndex < 0 || _currentAbsOriginal == null)
+            { Status(L.T("St.NeedTexturedMaterial")); return; }
+
+            byte[] grad = ComputeGraded();
+            string def = TextureNaming.NewSavePath(_currentAbsOriginal,
+                TextureIO.TextureWriter.Extension(_lastSaveFormat));
+
+            string path;
+            TextureIO.TextureFormat fmt;
+            int tw, th, quality;
+            using (var dlg = new SaveTextureDialog(def, _w, _h, _lastSaveFormat, _lastJpegQuality))
+            {
+                if (dlg.ShowDialog(DlgOwner()) != System.Windows.Forms.DialogResult.OK) return;
+                path = dlg.TargetPath;
+                fmt = dlg.Format;
+                tw = dlg.TargetWidth;
+                th = dlg.TargetHeight;
+                quality = dlg.JpegQuality;
+            }
+
+            // 记住这次的选择，下次打开对话框时沿用
+            _lastSaveFormat = fmt;
+            _lastJpegQuality = quality;
+
+            try
+            {
+                byte[] outBuf = TextureIO.TextureWriter.Resample(grad, _w, _h, tw, th);
+                TextureIO.TextureWriter.Save(path, outBuf, tw, th, fmt, quality);
+            }
+            catch (Exception ex)
+            {
+                Status(L.F("St.SaveAsFail", ex.Message));
+                System.Windows.Forms.MessageBox.Show(L.F("St.SaveAsFail", ex.Message), L.T("SaveDlg.Title"),
+                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return;
+            }
+
+            _bridge.ApplySaved(_currentMatIndex, path);
+            _pushedMats.Add(_currentMatIndex);
+            MarkCurrentModified();
+            RefreshCurrentThumbnail(path);
+            Status(L.F("St.SavedAsFmt", System.IO.Path.GetFileName(path), tw, th));
+        }
+
+        /// <summary>
+        /// 导出「带 Alpha 通道」的选区 PNG：alpha = 选区（选中 255 / 未选 0），
+        /// RGB 由用户选：纯白（当蒙版）/ 原贴图 / 调色结果（对照着看选的是哪块）。
+        /// 与文件菜单里的黑白蒙版并存 —— 那个适合 Ctrl+点击载入选区，这个适合直接当蒙版/通道。
+        /// </summary>
+        public void ExportSelectionAlpha()
+        {
+            if (_currentMatIndex < 0) { Status(L.T("St.NeedMaterial")); return; }
+            if (_selectedTris.Count == 0)
+            {
+                Status(L.T("St.NoSelection"));
+                System.Windows.Forms.MessageBox.Show(
+                    L.T("Dlg.NoSelMaskBody"), L.T("Dlg.MaskTitle"),
+                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
+                return;
+            }
+
+            var info = FindMaterialInfo(_currentMatIndex);
+            int w, h;
+            if (!ResolveMaskSize(info, out w, out h)) return;
+
+            var options = new[] { L.T("AlphaDlg.White"), L.T("AlphaDlg.Original"), L.T("AlphaDlg.Graded") };
+            int pick = ChoiceDialog.Choose(DlgOwner(), L.T("AlphaDlg.Title"),
+                L.F("AlphaDlg.Desc", _selectedTris.Count), options, 0);
+            if (pick < 0) return;
+
+            string fileName = Sanitize(info != null ? info.Name : "material") + "_alpha.png";
+            string path;
+            using (var dlg = new System.Windows.Forms.SaveFileDialog())
+            {
+                dlg.Title = L.T("AlphaDlg.Title");
+                dlg.Filter = L.T("Dlg.FilterPng");
+                dlg.FileName = fileName;
+                dlg.InitialDirectory = _bridge.PmxDirectory ?? "";
+                if (dlg.ShowDialog(DlgOwner()) != System.Windows.Forms.DialogResult.OK) return;
+                path = dlg.FileName;
+            }
+
+            try
+            {
+                var mask = new bool[w * h];
+                foreach (int ti in _selectedTris)
+                    if (ti >= 0 && ti < _tris.Count) RasterizeTri(mask, w, h, _tris[ti]);
+
+                byte[] rgb = null;
+                if (pick == 1 && _originalBytes != null)
+                    rgb = SameSize(_originalBytes, _w, _h, w, h);
+                else if (pick == 2)
+                    rgb = SameSize(ComputeGraded(), _w, _h, w, h);
+
+                MaskWriter.SaveAlphaPng(path, mask, w, h, rgb);
+
+                Status(L.F("St.AlphaExportedFmt", System.IO.Path.GetFileName(path), w, h, _selectedTris.Count));
+                System.Windows.Forms.MessageBox.Show(
+                    L.F("Dlg.AlphaBodyFmt", path, w, h, _selectedTris.Count, options[pick]),
+                    L.T("Dlg.MaskTitle"), System.Windows.Forms.MessageBoxButtons.OK,
+                    System.Windows.Forms.MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                Status(L.F("St.MaskFail", ex.Message));
+                System.Windows.Forms.MessageBox.Show(L.F("St.MaskFail", ex.Message), L.T("Dlg.MaskTitle"),
+                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>把一张 RGBA 图对齐到蒙版尺寸（尺寸一致就直接用，避免无谓重采样）。</summary>
+        private static byte[] SameSize(byte[] rgba, int w, int h, int targetW, int targetH)
+        {
+            if (rgba == null) return null;
+            if (w == targetW && h == targetH) return rgba;
+            return TextureIO.TextureWriter.Resample(rgba, w, h, targetW, targetH);
         }
 
         /// <summary>
@@ -1634,7 +1993,7 @@ namespace TextureGrade.WpfUI
                 dlg.Filter = L.T("Dlg.FilterPng");
                 dlg.FileName = matName + "_UVLayout.png";
                 dlg.InitialDirectory = _bridge.PmxDirectory ?? "";
-                if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                if (dlg.ShowDialog(DlgOwner()) != System.Windows.Forms.DialogResult.OK) return;
                 path = dlg.FileName;
             }
 
@@ -1730,7 +2089,7 @@ namespace TextureGrade.WpfUI
                 dlg.Filter = L.T("Dlg.FilterPng");
                 dlg.FileName = fileName;
                 dlg.InitialDirectory = _bridge.PmxDirectory ?? "";
-                if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                if (dlg.ShowDialog(DlgOwner()) != System.Windows.Forms.DialogResult.OK) return;
                 path = dlg.FileName;
             }
 
@@ -1787,7 +2146,7 @@ namespace TextureGrade.WpfUI
                 dlg.Filter = L.T("Dlg.FilterPng");
                 dlg.FileName = fileName;
                 dlg.InitialDirectory = _bridge.PmxDirectory ?? "";
-                if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                if (dlg.ShowDialog(DlgOwner()) != System.Windows.Forms.DialogResult.OK) return;
                 path = dlg.FileName;
             }
 
@@ -1826,7 +2185,7 @@ namespace TextureGrade.WpfUI
             {
                 dlg.Description = L.T("Dlg.MaskAllDesc");
                 dlg.SelectedPath = _bridge.PmxDirectory ?? "";
-                if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                if (dlg.ShowDialog(DlgOwner()) != System.Windows.Forms.DialogResult.OK) return;
                 dir = dlg.SelectedPath;
             }
 
@@ -1917,12 +2276,16 @@ namespace TextureGrade.WpfUI
             Status(L.T("St.Reverted"));
         }
 
+        /// <summary>
+        /// 刷新当前材质的「已修改」徽章。
+        /// 判据只看两件事：是否推送过到模型、当前参数是否离开默认值。
+        /// Settings 里装的永远是当前材质的参数（换材质时会先存旧的后载新的），
+        /// 所以不需要再去看 _matParams —— 那样反而会把上一次的残留当成"改过"。
+        /// </summary>
         private void MarkCurrentModified()
         {
             if (_currentMatIndex < 0) return;
-            bool mod = _pushedMats.Contains(_currentMatIndex)
-                       || HasNonDefaultParams()
-                       || CurrentHasParams();
+            bool mod = _pushedMats.Contains(_currentMatIndex) || HasNonDefaultParams();
             foreach (var r in _rows)
                 if (r.Info.Index == _currentMatIndex) { r.Modified = mod; break; }
         }

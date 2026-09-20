@@ -62,21 +62,134 @@ namespace TextureGrade.Models
             catch { return false; }
         }
 
-        /// <summary>列出全部预设名（按名称排序）。</summary>
-        public static List<string> List()
+        /// <summary>预设列表的排序方式。</summary>
+        public enum PresetSort
+        {
+            /// <summary>按名称（当前区域性的忽略大小写排序）——默认。</summary>
+            Name,
+            /// <summary>按修改时间，最近改过的排最前。改预设名也算改动。</summary>
+            Time,
+            /// <summary>手动顺序（用上移/下移调），顺序存在 presets\order.txt 里。</summary>
+            Custom
+        }
+
+        private const string OrderFile = "order.txt";
+
+        /// <summary>列出全部预设名（默认按名称排序）。</summary>
+        public static List<string> List() => List(PresetSort.Name);
+
+        /// <summary>按指定方式列出预设名。</summary>
+        public static List<string> List(PresetSort sort)
+        {
+            var names = new List<string>();
+            try
+            {
+                foreach (var f in System.IO.Directory.GetFiles(Folder, "*" + Ext))
+                {
+                    string n = Path.GetFileNameWithoutExtension(f);
+                    if (!string.IsNullOrWhiteSpace(n)) names.Add(n);
+                }
+            }
+            catch { return names; }
+
+            switch (sort)
+            {
+                case PresetSort.Time:
+                    // 按修改时间倒序；读不到时间就退回按名称
+                    try
+                    {
+                        names.Sort((a, b) => LastWrite(b).CompareTo(LastWrite(a)));
+                        return names;
+                    }
+                    catch { break; }
+
+                case PresetSort.Custom:
+                    return ApplyOrder(names, LoadOrder());
+            }
+
+            names.Sort(StringComparer.CurrentCultureIgnoreCase.Compare);
+            return names;
+        }
+
+        private static DateTime LastWrite(string name)
+        {
+            try { return File.GetLastWriteTimeUtc(PathFor(name)); }
+            catch { return DateTime.MinValue; }
+        }
+
+        /// <summary>按 order.txt 里记录的顺序排；没记录过的名字按名称接在后面。</summary>
+        private static List<string> ApplyOrder(List<string> names, List<string> order)
+        {
+            var result = new List<string>();
+            var left = new HashSet<string>(names, StringComparer.OrdinalIgnoreCase);
+            foreach (string n in order)
+            {
+                string hit = null;
+                foreach (string c in names)
+                    if (string.Equals(c, n, StringComparison.OrdinalIgnoreCase)) { hit = c; break; }
+                if (hit != null) { result.Add(hit); left.Remove(hit); }
+            }
+            var rest = new List<string>(left);
+            rest.Sort(StringComparer.CurrentCultureIgnoreCase.Compare);
+            result.AddRange(rest);
+            return result;
+        }
+
+        /// <summary>读取自定义顺序（每行一个预设名）。</summary>
+        public static List<string> LoadOrder()
+        {
+            var list = new List<string>();
+            try
+            {
+                string p = Path.Combine(Folder, OrderFile);
+                if (!File.Exists(p)) return list;
+                foreach (string line in File.ReadAllLines(p))
+                {
+                    string n = line == null ? "" : line.Trim();
+                    if (n.Length > 0 && !list.Contains(n)) list.Add(n);
+                }
+            }
+            catch { /* 顺序文件坏了就当没有 */ }
+            return list;
+        }
+
+        /// <summary>写入自定义顺序。</summary>
+        public static void SaveOrder(IEnumerable<string> names)
         {
             try
             {
-                return System.IO.Directory.GetFiles(Folder, "*" + Ext)
-                    .Select(Path.GetFileNameWithoutExtension)
-                    .Where(n => !string.IsNullOrWhiteSpace(n))
-                    .OrderBy(n => n, StringComparer.CurrentCultureIgnoreCase)
-                    .ToList();
+                System.IO.Directory.CreateDirectory(Folder);
+                File.WriteAllLines(Path.Combine(Folder, OrderFile), new List<string>(names));
             }
-            catch
+            catch { /* 存不了顺序不影响使用 */ }
+        }
+
+        /// <summary>
+        /// 预设改名（文件内容原样保留，只是换文件名）。
+        /// 目标名已存在、或名字非法时返回 false，调用方负责提示。
+        /// </summary>
+        public static bool Rename(string oldName, string newName)
+        {
+            if (string.IsNullOrWhiteSpace(oldName)) return false;
+            string clean = Sanitize(newName);
+            if (string.IsNullOrEmpty(clean) || clean == Sanitize(oldName)) return false;
+
+            string src = PathFor(oldName), dst = PathFor(clean);
+            if (!File.Exists(src) || File.Exists(dst)) return false;
+
+            try
             {
-                return new List<string>();
+                File.Move(src, dst);
+
+                // 顺序文件里同步改名，否则改名后自定义顺序会对不上
+                var order = LoadOrder();
+                bool touched = false;
+                for (int i = 0; i < order.Count; i++)
+                    if (string.Equals(order[i], oldName, StringComparison.OrdinalIgnoreCase)) { order[i] = clean; touched = true; }
+                if (touched) SaveOrder(order);
+                return true;
             }
+            catch { return false; }
         }
 
         public static Dictionary<string, double> Load(string name)

@@ -60,17 +60,21 @@ namespace TextureGrade.Bridge
 
         public void ApplyPreview(int materialIndex, string absTexturePath)
         {
-            // 删除上一次同材质的临时文件，避免堆积
-            if (_lastTemp.TryGetValue(materialIndex, out var prev) && prev != absTexturePath && File.Exists(prev))
-                TryDelete(prev);
-            _lastTemp[materialIndex] = absTexturePath;
-
             var pmx = _host.Connector.Pmx.GetCurrentState();
             pmx.Material[materialIndex].Tex = absTexturePath; // 临时文件用绝对路径，保证 PMXEditor 能解析
             _host.Connector.Pmx.Update(pmx, PmxUpdateObject.Material, materialIndex);
             _host.Connector.Form.UpdateList(UpdateObject.Material);
             _host.Connector.View.PMDView.UpdateModel();
+            // 有些版本仅 UpdateModel() 不会重新加载材质贴图，再补一次「只更新该材质」。
+            // 这两个调用在其它版本上可能被裁剪掉，失败就当没这回事，不能影响主流程。
+            try { _host.Connector.View.PMDView.UpdateModel_Material(materialIndex); } catch { }
             _host.Connector.View.PMDView.UpdateView();
+
+            // 推送完成后再清理：太早删可能把渲染端还没读完的那张图删掉
+            if (_lastTemp.TryGetValue(materialIndex, out var prev) && prev != absTexturePath && File.Exists(prev))
+                TryDelete(prev);
+            _lastTemp[materialIndex] = absTexturePath;
+            TextureNaming.DeleteStalePreviews(absTexturePath, _lastTemp.Values);
         }
 
         public void ApplySaved(int materialIndex, string absTexturePath)
@@ -150,7 +154,10 @@ namespace TextureGrade.Bridge
         public void Cleanup()
         {
             foreach (var kv in _lastTemp)
+            {
                 if (File.Exists(kv.Value)) TryDelete(kv.Value);
+                TextureNaming.DeleteStalePreviews(kv.Value, null);   // 顺带清掉更早几次留下的同名前缀文件
+            }
             _lastTemp.Clear();
         }
 

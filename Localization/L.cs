@@ -143,8 +143,10 @@ namespace TextureGrade.Localization
             add("File.ReRead", "Re-read", "重新读取", "重新讀取", "再読み込み");
             add("File.RefreshModel", "Refresh Model", "刷新模型", "刷新模型", "モデルを更新");
             add("File.SaveNew", "Save as New Texture", "另存为新贴图", "另存為新貼圖", "新規テクスチャに保存");
+            add("File.SaveNewAs", "Save as New Texture… (pick format & size)", "另存为新贴图…（选格式与尺寸）", "另存為新貼圖…（選格式與尺寸）", "新規テクスチャに保存…（形式とサイズを選択）");
             add("File.ExportUvLayout", "Export UV Layout…", "导出 UV 布局图…", "匯出 UV 佈局圖…", "UV レイアウトを書き出し…");
             add("File.ExportSelectionMask", "Export Selection Mask… (white = selected)", "导出当前选区蒙版…（白=选中）", "匯出目前選取遮罩…（白=選取）", "選択範囲マスクを書き出し…（白=選択）");
+            add("File.ExportSelectionAlpha", "Export Selection Mask… (as Alpha channel PNG)", "导出选区蒙版…（带 Alpha 通道 PNG）", "匯出選取遮罩…（含 Alpha 通道 PNG）", "選択範囲マスクを書き出し…（アルファ通道付き PNG）");
             add("File.ExportMaterialMask", "Export Current Material Mask…", "导出当前材质蒙版…", "匯出目前材質遮罩…", "現在の材質マスクを書き出し…");
             add("File.ExportAllMasks", "Export All Material Masks… (one per material)", "导出全部材质蒙版…（每材质一张）", "匯出全部材質遮罩…（每材質一張）", "全材質マスクを書き出し…（材質ごとに1枚）");
             add("File.OpenPresetFolder", "Open Preset Folder", "打开预设文件夹", "開啟預設資料夾", "プリセットフォルダを開く");
@@ -168,6 +170,7 @@ namespace TextureGrade.Localization
             add("Edit.ModePan", "Pan Mode (drag = pan)", "平移模式（拖动平移）", "平移模式（拖曳平移）", "平移モード（ドラッグで移動）");
             add("Edit.SelectIsland", "Select Connected UV Island (same as double-click)", "选连通 UV 块（等同双击）", "選取連通 UV 塊（等同雙擊）", "連結 UV アイランドを選択（ダブルクリックと同じ）");
             add("Edit.SelectAll", "Select All UV Triangles", "全选 UV 三角面", "全選 UV 三角面", "全ての UV 三角面を選択");
+            add("Edit.InvertSel", "Invert UV Selection", "反选 UV 选区", "反選 UV 選取", "UV 選択を反転");
             add("Edit.ClearSel", "Clear UV Selection", "清除 UV 选区", "清除 UV 選取", "UV 選択を解除");
 
             add("View.Fit", "Fit to Window", "适应窗口", "適應視窗", "ウィンドウに合わせる");
@@ -333,6 +336,24 @@ namespace TextureGrade.Localization
             add("Preset.DefaultName", "My Preset", "我的预设", "我的預設", "マイプリセット");
             add("Preset.Suffix", " recipe", " 配方", " 配方", " 配方");
 
+            // 预设管理：改名 / 排序 / 手动调序
+            add("Preset.Rename", "Rename", "改名", "改名", "名前を変更");
+            add("Preset.RenameTitle", "Rename Preset", "重命名预设", "重新命名預設", "プリセット名を変更");
+            add("Preset.RenamePrompt", "New name for \"{0}\":", "给「{0}」起个新名字：", "為「{0}」取個新名字：", "「{0}」の新しい名前：");
+            add("Preset.RenameDup", "A preset named \"{0}\" already exists.", "已经有叫「{0}」的预设了。", "已經有叫「{0}」的預設了。", "「{0}」というプリセットは既に存在します。");
+            add("Preset.Renamed", "Renamed \"{0}\" to \"{1}\"", "已把「{0}」改名为「{1}」", "已把「{0}」改名為「{1}」", "「{0}」を「{1}」に変更しました");
+            add("Preset.RenameFail", "Rename failed: \"{0}\" (invalid name, or the file is in use)", "改名失败：「{0}」（名字不合法或文件被占用）", "改名失敗：「{0}」（名字不合法或檔案被佔用）", "名前の変更に失敗：「{0}」（無効な名前、またはファイルが使用中）");
+            add("Preset.SortFmt", "Sort: {0}", "排序：{0}", "排序：{0}", "並び替え：{0}");
+            add("Preset.SortName", "by name", "按名称", "按名稱", "名前順");
+            add("Preset.SortTime", "by time", "按时间", "按時間", "更新順");
+            add("Preset.SortCustom", "manual", "手动顺序", "手動順序", "手動");
+            add("Preset.Sorted", "Preset list sorted ({0})", "预设列表已按 {0} 排序", "預設清單已按 {0} 排序", "プリセットを {0} で並び替えました");
+            add("Preset.Up", "Move Up", "上移", "上移", "上へ");
+            add("Preset.Down", "Move Down", "下移", "下移", "下へ");
+            add("Preset.Moved", "Moved \"{0}\" to position {1} of {2}", "已把「{0}」移到第 {1} 位（共 {2} 个）", "已把「{0}」移到第 {1} 位（共 {2} 個）", "「{0}」を {2} 件中 {1} 番目に移動しました");
+            add("Preset.AtTop", "Already at the top", "已经在最前面了", "已經在最前面了", "すでに先頭です");
+            add("Preset.AtBottom", "Already at the bottom", "已经在最后面了", "已經在最後面了", "すでに末尾です");
+
             // ---------------- Lab 取色环 ----------------
             add("Lab.WheelTip", "Outer ring: hue (constant lightness)\nInner disc: chroma (a single line at fixed lightness)",
                                 "外环：色相（等亮度）\n内圈：彩度（固定亮度下的一条线）",
@@ -391,6 +412,8 @@ namespace TextureGrade.Localization
             add("St.SendVertsFail", "Sending vertices failed: {0}", "发送顶点失败：{0}", "傳送頂點失敗：{0}", "頂点の送信に失敗：{0}");
             add("St.NoTris", "This material has no UV triangles", "当前材质没有 UV 三角面", "目前材質沒有 UV 三角面", "この材質に UV 三角面はありません");
             add("St.SelectedAll", "Selected all {0} UV triangles", "已选中全部 {0} 个 UV 三角面", "已選取全部 {0} 個 UV 三角面", "全ての UV 三角面 {0} 枚を選択しました");
+            add("St.InvertedFmt", "Inverted selection — {0} of {1} UV triangles selected", "已反选 —— {0}/{1} 个 UV 三角面处于选中状态", "已反選 —— {0}/{1} 個 UV 三角面處於選取狀態", "選択を反転 — {1} 枚中 {0} 枚を選択");
+            add("St.InvertedEmpty", "Inverted selection — nothing selected now (the previous selection was everything)", "已反选 —— 当前没有选中面（原来的选区是全部）", "已反選 —— 目前沒有選取面（原本的選取是全部）", "選択を反転 — 現在の選択はなし（前回は全選択でした）");
             add("St.CompareOn", "Showing the original (compare mode) — your parameters are kept", "正在显示原图（对比模式）—— 调色参数仍然保留", "正在顯示原圖（對比模式）—— 調色參數仍然保留", "元画像を表示中（比較モード）— パラメータは保持されます");
             add("St.CompareOff", "Back to the graded result", "已回到调色结果", "已回到調色結果", "調整結果に戻りました");
             add("St.UvColorFmt", "UV layout color changed to #{0:X2}{1:X2}{2:X2}", "UV 布局颜色已改为 #{0:X2}{1:X2}{2:X2}", "UV 佈局顏色已改為 #{0:X2}{1:X2}{2:X2}", "UV レイアウトの色を #{0:X2}{1:X2}{2:X2} に変更");
@@ -401,7 +424,17 @@ namespace TextureGrade.Localization
             add("St.AlreadyDefault", "All parameters are already default", "参数已经全部为默认值", "參數已經全部為預設值", "全て既定値です");
             add("St.ResetDone", "All grading parameters of this material reset", "已重置该材质的全部调色参数", "已重設該材質的全部調色參數", "この材質の調色パラメータを全てリセットしました");
             add("St.RefreshedFmt", "Pushed to the 3D model (temp file {0})", "已刷新到 3D 模型（临时文件 {0}）", "已刷新到 3D 模型（暫存檔 {0}）", "3D モデルに反映しました（一時ファイル {0}）");
+            add("St.RefreshFailFmt", "Pushing to the 3D model failed: {0}", "刷新到 3D 模型失败：{0}", "刷新到 3D 模型失敗：{0}", "3D モデルへの反映に失敗：{0}");
+            add("St.PreviewFallbackFmt", "Texture folder is not writable — preview written to {0} instead",
+                                         "贴图所在目录不可写，临时预览已改写到 {0}",
+                                         "貼圖所在目錄不可寫，暫存預覽已改寫到 {0}",
+                                         "テクスチャのフォルダに書き込めないため、一時プレビューを {0} に書き出しました");
+            add("St.SelRestoredFmt", "Restored this material's previous UV selection ({0} triangles) — grading still applies to the selection only",
+                                     "已恢复该材质上一次的 UV 选区（{0} 个三角面）—— 调色仍只作用于选区",
+                                     "已恢復該材質上一次的 UV 選取（{0} 個三角面）—— 調色仍只作用於選取",
+                                     "この材質の前回の UV 選択を復元しました（{0} 枚）— 調色は選択範囲のみに適用されます");
             add("St.SavedNewFmt", "Saved as new texture and pointed to: {0}", "已另存为新贴图并指向：{0}", "已另存為新貼圖並指向：{0}", "新規テクスチャとして保存し参照先を変更：{0}");
+            add("St.SavedAsFmt", "Saved as {0} ({1}×{2}) and pointed the material at it", "已另存为 {0}（{1}×{2}）并让材质指向它", "已另存為 {0}（{1}×{2}）並讓材質指向它", "{0}（{1}×{2}）として保存し、材質の参照先を変更しました");
             add("St.NeedUvMaterial", "Please select a material that has UVs", "请先选择一个有 UV 的材质", "請先選擇一個有 UV 的材質", "UV を持つ材質を選択してください");
             add("St.UvExportedFmt", "UV layout exported: {0} ({1}×{2})", "UV 布局图已导出：{0}（{1}×{2}）", "UV 佈局圖已匯出：{0}（{1}×{2}）", "UV レイアウトを書き出し：{0}（{1}×{2}）");
             add("St.ExportFail", "Export failed: {0}", "导出失败：{0}", "匯出失敗：{0}", "書き出しに失敗：{0}");
@@ -457,6 +490,49 @@ namespace TextureGrade.Localization
             add("St.NeedTextureForLab", "Please select a material with a texture first", "请先选择一个有贴图的材质", "請先選擇一個有貼圖的材質", "先にテクスチャ付きの材質を選択してください");
 
             // ---------------- 对话框 ----------------
+            add("Dlg.OK", "OK", "确定", "確定", "OK");
+            add("Dlg.Cancel", "Cancel", "取消", "取消", "キャンセル");
+            // ---------------- 另存贴图（格式 / 尺寸）对话框 ----------------
+            add("SaveDlg.Title", "Save Texture As", "另存贴图为", "另存貼圖為", "テクスチャを別名保存");
+            add("SaveDlg.Path", "File", "文件", "檔案", "ファイル");
+            add("SaveDlg.Browse", "Browse…", "浏览…", "瀏覽…", "参照…");
+            add("SaveDlg.Format", "Format", "格式", "格式", "形式");
+            add("SaveDlg.Size", "Size", "尺寸", "尺寸", "サイズ");
+            add("SaveDlg.SizeOriginal", "Original (100%)", "原尺寸（100%）", "原尺寸（100%）", "元サイズ（100%）");
+            add("SaveDlg.SizeHalf", "Half (50%)", "二分之一（50%）", "二分之一（50%）", "1/2（50%）");
+            add("SaveDlg.SizeQuarter", "Quarter (25%)", "四分之一（25%）", "四分之一（25%）", "1/4（25%）");
+            add("SaveDlg.SizeCustom", "Custom…", "自定义…", "自訂…", "カスタム…");
+            add("SaveDlg.Width", "W", "宽", "寬", "幅");
+            add("SaveDlg.Height", "H", "高", "高", "高");
+            add("SaveDlg.Quality", "JPEG quality", "JPEG 质量", "JPEG 品質", "JPEG 品質");
+            add("SaveDlg.NoAlpha", "No alpha channel", "不含 Alpha 通道", "不含 Alpha 通道", "アルファなし");
+            add("SaveDlg.Lossy", "Lossy compression", "有损压缩", "有損壓縮", "非可逆圧縮");
+            add("SaveDlg.DdsNote", "DDS sizes are safest as powers of two", "DDS 建议宽高保持 2 的幂", "DDS 建議寬高保持 2 的冪", "DDS は幅・高さを 2 のべき乗にするのが無難");
+            add("SaveDlg.InfoFmt", "Source {0}×{1} → output {2}×{3}", "原图 {0}×{1} → 输出 {2}×{3}", "原圖 {0}×{1} → 輸出 {2}×{3}", "元 {0}×{1} → 出力 {2}×{3}");
+            add("SaveDlg.Save", "Save", "保存", "保存", "保存");
+            add("SaveDlg.Cancel", "Cancel", "取消", "取消", "キャンセル");
+            add("SaveDlg.NeedPath", "Please choose where to save the file.", "请选择保存位置。", "請選擇儲存位置。", "保存先を選んでください。");
+            add("SaveDlg.FilterAll", "All supported formats|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.tga;*.dds|All files|*.*",
+                                     "所有支持的格式|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.tga;*.dds|所有文件|*.*",
+                                     "所有支援的格式|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.tga;*.dds|所有檔案|*.*",
+                                     "対応形式|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.tga;*.dds|すべてのファイル|*.*");
+
+            // ---------------- 导出带 Alpha 的选区蒙版 ----------------
+            add("AlphaDlg.Title", "Export Selection Mask (Alpha Channel)", "导出选区蒙版（Alpha 通道）", "匯出選取遮罩（Alpha 通道）", "選択範囲マスクを書き出し（アルファチャンネル）");
+            add("AlphaDlg.Desc", "The alpha channel holds the selection (selected = opaque).\nWhat should the RGB channels contain? Currently {0} UV faces are selected.",
+                                 "Alpha 通道保存选区（选中 = 不透明）。RGB 通道要放什么？\n当前选中 {0} 个 UV 面。",
+                                 "Alpha 通道保存選取（選取 = 不透明）。RGB 通道要放什麼？\n目前選取 {0} 個 UV 面。",
+                                 "アルファチャンネルに選択範囲（選択 = 不透明）を入れます。\nRGB には何を入れますか？現在 {0} 枚の UV 面が選択中。");
+            add("AlphaDlg.White", "Plain white (best as a layer mask)", "纯白（最适合当图层蒙版）", "純白（最適合當圖層遮罩）", "白一色（レイヤーマスク向け）");
+            add("AlphaDlg.Original", "Original texture (see what you selected)", "原贴图（方便看选的是哪块）", "原貼圖（方便看選的是哪塊）", "元テクスチャ（選択箇所の確認向け）");
+            add("AlphaDlg.Graded", "Graded result (pull out the graded area)", "调色结果（方便把调好的部分抠出来）", "調色結果（方便把調好的部分摳出來）", "調整結果（調整部分の抜き出し向け）");
+            add("Dlg.AlphaBodyFmt", "Alpha mask exported to:\n{0}\n\nSize {1}×{2}; alpha = the {3} selected UV faces (255), the rest transparent (0).\nRGB = {4}.\nIn Photoshop: Ctrl+click the layer thumbnail to load the selection, or paste it straight into a layer mask.",
+                                    "带 Alpha 的蒙版已导出到：\n{0}\n\n尺寸 {1}×{2}；alpha：选中的 {3} 个 UV 面 = 255，其余 = 0（透明）。\nRGB = {4}。\n在 PS 里：Ctrl+点击图层缩略图即可载入选区，也可以直接贴进图层蒙版。",
+                                    "帶 Alpha 的遮罩已匯出到：\n{0}\n\n尺寸 {1}×{2}；alpha：選取的 {3} 個 UV 面 = 255，其餘 = 0（透明）。\nRGB = {4}。\n在 PS 裡：Ctrl+點擊圖層縮圖即可載入選取，也可以直接貼進圖層遮罩。",
+                                    "アルファ付きマスクを書き出し：\n{0}\n\nサイズ {1}×{2}、アルファ：選択した {3} 枚 = 255、その他 = 0（透明）。\nRGB = {4}。\nPhotoshop では Ctrl+クリックで選択範囲を読み込み、そのままレイヤーマスクにも貼り付けられます。");
+            add("St.SaveAsFail", "Saving failed: {0}", "保存失败：{0}", "儲存失敗：{0}", "保存に失敗：{0}");
+            add("St.AlphaExportedFmt", "Alpha mask exported: {0} ({1}×{2}, {3} faces)", "带 Alpha 的蒙版已导出：{0}（{1}×{2}，{3} 个面）", "帶 Alpha 的遮罩已匯出：{0}（{1}×{2}，{3} 個面）", "アルファ付きマスクを書き出し：{0}（{1}×{2}、{3} 枚）");
+
             add("Dlg.FilterPng", "PNG Image|*.png", "PNG 图像|*.png", "PNG 圖片|*.png", "PNG 画像|*.png");
             add("Dlg.ExportUvTitle", "Export UV Layout (transparent + wireframe)", "导出 UV 布局图（透明背景 + 线框）", "匯出 UV 佈局圖（透明背景 + 線框）", "UV レイアウトを書き出し（透明 + ワイヤーフレーム）");
             add("Dlg.ExportUvBody", "UV layout exported to:\n{0}\n\nSize {1}×{2}, transparent background + wireframe — it aligns directly over the texture.",

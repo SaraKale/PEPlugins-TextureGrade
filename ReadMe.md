@@ -41,7 +41,8 @@ Clarity/Sharpen → Effects → Lab color wheel.
 
 1. Moving a slider only changes the in-memory `WriteableBitmap` preview — **not a single byte of the original texture**.
 2. **Refresh Model** writes the result to a temporary PNG and pushes it to PMXEditor's 3D view, so you can judge it in context.
-3. **Save as New Texture** writes `xxx_new.png` to disk and points the material at it.
+3. **Save as New Texture** writes `xxx_new.png` to disk and points the material at it (one click, PNG at original size);
+   use **Save as New Texture… (pick format & size)** when you need a different container format or a scaled-down output.
 4. **Revert** restores `Material.Tex` to its original value and cleans up the temporary files.
 
 ### Also included
@@ -49,9 +50,11 @@ Clarity/Sharpen → Effects → Lab color wheel.
 - **Material list**: texture thumbnail + index · name + "Modified" badge.
 - **Per-material parameters**: each material remembers its own settings; switching back and forth loses nothing.
 - **Presets**: save the current parameters as JSON, double-click to apply; stored in `presets\` next to the plug-in.
+- **Preset management**: rename / delete / sort (by name -> by time -> manual order); Move Up / Move Down switches to manual order automatically (stored in `presets\order.txt`).
 - **Histogram**: overlaid RGB, updated live; can be hidden from the View menu.
 - **Compare Original**: toggle between the original texture and the graded result (parameters are kept).
 - **Mask and UV layout export**: current selection mask / current material mask / all material masks (black & white PNG), plus a UV layout image (transparent background + wireframe PNG).
+- **Selection mask with an alpha channel**: the alpha channel *is* the selection (selected = opaque); RGB can be plain white / the original texture / the graded result — drop it straight into Photoshop as a layer mask or channel.
 - **Multi-language**: English / 简体中文 / 繁體中文 / 日本語 — UI, status bar and message boxes are fully translated.
 - **Help window**: reads the per-language manual from `data\` next to the plug-in; the window is freely resizable.
 
@@ -179,6 +182,8 @@ Edit them freely, then click **Reload** in the manual window.
 | PNG / JPG / BMP / GIF / TIFF | Native GDI+ decoding |
 | TGA | Hand-written decoder (RLE / non-RLE, 16/24/32-bit) |
 | DDS | Hand-written decoder (uncompressed + DXT1 / DXT3 / DXT5) |
+
+Writing ("Save as New Texture…") covers all of them too: PNG / JPEG / BMP / GIF / TIFF go through GDI+, TGA and DDS (raw, DXT1/3/5) use the hand-written encoders, with original / 1:2 / 1:4 / custom width+height.
 
 ---
 
