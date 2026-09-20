@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <PmxEditorDir Condition="'$(PmxEditorDir)' == ''">$(MSBuildProjectDirectory)\..\..\..\PmxEditor_0275</PmxEditorDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\PEPlugins-TextureGrade.csproj" />
+    <Reference Include="PEPlugin"><HintPath>$(PmxEditorDir)\Lib\PEPlugin\PEPlugin.dll</HintPath></Reference>
+    <Reference Include="SlimDX"><HintPath>$(PmxEditorDir)\Lib\SlimDX\x86\SlimDX.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

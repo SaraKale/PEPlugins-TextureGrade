@@ -1,4 +1,5 @@
 using TextureGrade.Models;
+using System.Threading;
 
 namespace TextureGrade.ColorGrade
 {
@@ -8,25 +9,30 @@ namespace TextureGrade.ColorGrade
     /// </summary>
     public class GradePipeline
     {
-        // 顺序：白平衡 -> 曝光/对比 -> 高光阴影 -> 色阶 -> 饱和 -> HSL分通道 -> 色相/色彩平衡 -> HSV/曲线 -> RGB -> Lab换色 -> 清晰锐化 -> 效果
+        // 顺序：白平衡 -> 曝光/对比 -> 高光阴影 -> 色阶 -> 饱和 -> HSL分通道 -> 色相/色彩平衡 -> HSV/曲线 -> RGB -> 清晰锐化 -> 效果
         // 注1：HslBands 放在全局色相旋转之前，这样 8 色带是按「原始色相」归类的（与 Lightroom 一致）
-        // 注2：LabColorize 放在色彩链的最后一环 —— 它承诺「锁定亮度时 L* 不变」，
-        //      排在它后面的就只剩清晰度/锐化与效果类，不会被别的色彩操作再改掉亮度。
         private static readonly IGradeEffect[] Effects =
         {
             new WhiteBalance(), new Exposure(), new Contrast(),
             new HighlightsShadows(), new WhitesBlacks(), new Levels(),
             new Saturation(), new Vibrance(), new HslBands(),
             new Hue(), new ColorBalance(),
-            new HsvValue(), new Curves(), new RgbGain(), new LabColorize(),
+            new HsvValue(), new Curves(), new RgbGain(),
             new Clarity(), new Sharpen(),
-            new GradientMap(), new Grayscale(), new Invert(), new Threshold()
+            new Grayscale(), new Invert(), new Threshold()
         };
 
-        public void Run(byte[] rgba, int width, int height, GradeSettings s)
+        public void Run(byte[] rgba, int width, int height, GradeSettings s, bool[] mask = null,
+            CancellationToken cancellationToken = default)
         {
+            var recolor = RecolorSettings.Read(s);
+            if (recolor.Mode == RecolorMode.Palette)
+                new PaletteRecolor(recolor).Apply(rgba, mask, cancellationToken);
             foreach (var e in Effects)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
                 e.Apply(rgba, width, height, s);
+            }
         }
     }
 }

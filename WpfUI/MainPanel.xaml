@@ -3,7 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    mc:Ignorable="d" Background="#FFF2F3F5" FontSize="14" UseLayoutRounding="True" Height="420" Width="640">
+    mc:Ignorable="d" Background="#FFF2F3F5" FontSize="14" UseLayoutRounding="True" d:DesignHeight="800" d:DesignWidth="1200">
 
     <UserControl.Resources>
 
@@ -50,6 +50,24 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <Style x:Key="PreviewToolButton" TargetType="Button" BasedOn="{StaticResource TgButton}">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="0,0,6,4"/>
+        </Style>
+        <Style x:Key="PreviewToolLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#FF687383"/>
+            <Setter Property="Width" Value="70"/>
+            <Setter Property="Margin" Value="0,7,8,0"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style x:Key="FooterToolLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#FF687383"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
         </Style>
 
         <!-- 主按钮（蓝底，用于「刷新模型」这类主操作） -->
@@ -194,19 +212,34 @@
         <!-- ================= 底部：操作按钮条 ================= -->
         <Border DockPanel.Dock="Bottom" Background="#FFE9EBEF" BorderBrush="#FFD3D7DD"
             BorderThickness="0,1,0,0" Padding="14,10">
-            <Grid>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                    <Button x:Name="BtnReRead" Content="重新读取" Style="{StaticResource TgButton}"/>
-                    <Button x:Name="BtnRefresh" Content="刷新模型" Style="{StaticResource TgPrimaryButton}"/>
-                    <Button x:Name="BtnSave" Content="另存为新贴图" Style="{StaticResource TgButton}"/>
-                    <Button x:Name="BtnRevert" Content="还原" Style="{StaticResource TgButton}"/>
-                    <Button x:Name="BtnReset" Content="重置参数" Style="{StaticResource TgButton}"/>
+            <WrapPanel>
+                <Border BorderBrush="#FFD3D7DD" BorderThickness="0,0,1,0" Padding="0,0,12,0" Margin="0,0,12,6">
+                    <StackPanel>
+                        <TextBlock x:Name="TxtSourceTools" Text="模型贴图" Style="{StaticResource FooterToolLabel}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="BtnReRead" Content="重新读取" Style="{StaticResource TgButton}"/>
+                            <Button x:Name="BtnRevert" Content="还原" Style="{StaticResource TgButton}" Margin="0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border BorderBrush="#FFD3D7DD" BorderThickness="0,0,1,0" Padding="0,0,12,0" Margin="0,0,12,6">
+                    <StackPanel>
+                        <TextBlock x:Name="TxtOutputTools" Text="应用与保存" Style="{StaticResource FooterToolLabel}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="BtnRefresh" Content="刷新模型" Style="{StaticResource TgPrimaryButton}"/>
+                            <Button x:Name="BtnSave" Content="另存为新贴图" Style="{StaticResource TgButton}" Margin="0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <StackPanel Margin="0,0,0,6">
+                    <TextBlock x:Name="TxtHistoryTools" Text="调色历史" Style="{StaticResource FooterToolLabel}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="BtnReset" Content="重置参数" Style="{StaticResource TgButton}"/>
+                        <Button x:Name="BtnUndo" Content="撤销" Style="{StaticResource TgButton}"/>
+                        <Button x:Name="BtnRedo" Content="重做" Style="{StaticResource TgButton}" Margin="0"/>
+                    </StackPanel>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button x:Name="BtnUndo" Content="撤销" Style="{StaticResource TgButton}"/>
-                    <Button x:Name="BtnRedo" Content="重做" Style="{StaticResource TgButton}" Margin="0"/>
-                </StackPanel>
-            </Grid>
+            </WrapPanel>
         </Border>
 
         <!-- ================= 主区：左预览 / 分隔条 / 右控制 ================= -->
@@ -222,6 +255,16 @@
                 <DockPanel>
 
                     <TextBlock x:Name="TxtPreviewTitle" DockPanel.Dock="Top" Text="贴图 + UV 预览" Style="{StaticResource CardTitle}"/>
+                    <StackPanel DockPanel.Dock="Top" Margin="16,0,16,0">
+                        <WrapPanel>
+                            <TextBlock x:Name="TxtScopeTitle" Text="调色范围" Margin="0,0,12,5" VerticalAlignment="Center"/>
+                            <RadioButton x:Name="ScopeSelection" Content="UV 选区优先" GroupName="TextureScope" Margin="0,0,12,5" VerticalContentAlignment="Center"/>
+                            <RadioButton x:Name="ScopeWhole" Content="整张贴图" GroupName="TextureScope" Margin="0,0,0,5" VerticalContentAlignment="Center"/>
+                        </WrapPanel>
+                        <Border x:Name="ScopeNotice" CornerRadius="3" Padding="8,5" Margin="0,2,0,0">
+                            <TextBlock x:Name="TxtScopeNotice" FontSize="12" Foreground="#FF6F603F" TextWrapping="Wrap"/>
+                        </Border>
+                    </StackPanel>
 
                     <!-- 最底部：操作提示 -->
                     <TextBlock x:Name="ViewHint" DockPanel.Dock="Bottom" Foreground="#FF8A9099"
@@ -231,18 +274,40 @@
                     <TextBlock x:Name="UvReadout" DockPanel.Dock="Bottom" Foreground="#FF5A6472"
                      FontSize="14" Margin="16,8,16,0" Text="(U: —, V: —)"/>
 
-                    <!-- 工具按钮条（WrapPanel：窗口变窄时自动换行，不会把按钮挤出去） -->
-                    <WrapPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="16,10,16,0">
-                        <Button x:Name="BtnFit" Content="适配" Style="{StaticResource TgButton}"/>
-                        <Button x:Name="BtnActual" Content="100%" Style="{StaticResource TgButton}"/>
-                        <Button x:Name="BtnGrid" Content="网格" Style="{StaticResource TgButton}"/>
-                        <Button x:Name="BtnMode" Content="平移" Style="{StaticResource TgButton}"/>
-                        <Button x:Name="BtnIsland" Content="选连通块" Style="{StaticResource TgButton}"/>
-                        <Button x:Name="BtnClearSel" Content="清空选区" Style="{StaticResource TgButton}"/>
-                        <Button x:Name="BtnCompare" Content="对比原图" Style="{StaticResource TgButton}"/>
-                        <Button x:Name="BtnRecvVerts" Content="接收选择顶点" Style="{StaticResource TgButton}"/>
-                        <Button x:Name="BtnSendVerts" Content="发送选择顶点" Style="{StaticResource TgButton}" Margin="0"/>
-                    </WrapPanel>
+                    <!-- Grouped tools retain their meaning when buttons wrap in a narrow preview. -->
+                    <StackPanel x:Name="PreviewTools" DockPanel.Dock="Bottom" Margin="16,10,16,0">
+                        <DockPanel LastChildFill="True">
+                            <TextBlock x:Name="TxtViewTools" Text="视图" Style="{StaticResource PreviewToolLabel}"/>
+                            <WrapPanel>
+                                <Button x:Name="BtnFit" Content="适配" Style="{StaticResource PreviewToolButton}"/>
+                                <Button x:Name="BtnActual" Content="100%" Style="{StaticResource PreviewToolButton}"/>
+                                <Button x:Name="BtnGrid" Content="网格" Style="{StaticResource PreviewToolButton}"/>
+                                <Button x:Name="BtnToggleUV" Content="隐藏 UV" Style="{StaticResource PreviewToolButton}"/>
+                                <Button x:Name="BtnCompare" Content="对比原图" Style="{StaticResource PreviewToolButton}"/>
+                            </WrapPanel>
+                        </DockPanel>
+                        <Border BorderBrush="#FFE2E6EB" BorderThickness="0,1,0,0" Margin="0,3,0,0" Padding="0,6,0,0">
+                            <DockPanel LastChildFill="True">
+                                <TextBlock x:Name="TxtSelectionTools" Text="选择" Style="{StaticResource PreviewToolLabel}"/>
+                                <WrapPanel>
+                                    <Button x:Name="BtnSelectMode" Content="选面" Style="{StaticResource PreviewToolButton}"/>
+                                    <Button x:Name="BtnMode" Content="平移" Style="{StaticResource PreviewToolButton}"/>
+                                    <Button x:Name="BtnIsland" Content="选连通块" Style="{StaticResource PreviewToolButton}"/>
+                                    <Button x:Name="BtnInvertSel" Content="反选 UV 选区" Style="{StaticResource PreviewToolButton}"/>
+                                    <Button x:Name="BtnClearSel" Content="清空选区" Style="{StaticResource PreviewToolButton}"/>
+                                </WrapPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border BorderBrush="#FFE2E6EB" BorderThickness="0,1,0,0" Margin="0,3,0,0" Padding="0,6,0,0">
+                            <DockPanel LastChildFill="True">
+                                <TextBlock x:Name="TxtVertexTools" Text="顶点同步" Style="{StaticResource PreviewToolLabel}"/>
+                                <WrapPanel>
+                                    <Button x:Name="BtnRecvVerts" Content="从模型接收" Style="{StaticResource PreviewToolButton}"/>
+                                    <Button x:Name="BtnSendVerts" Content="发送到模型" Style="{StaticResource PreviewToolButton}"/>
+                                </WrapPanel>
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
 
                     <!-- 直方图（视图菜单可开关；调色后实时更新，用来判断曝光/色彩分布） -->
                     <Border x:Name="HistogramBox" DockPanel.Dock="Bottom" Margin="16,10,16,0"
@@ -268,6 +333,9 @@
                                 <Rectangle x:Name="CheckerRect" Canvas.Left="0" Canvas.Top="0" Fill="{StaticResource CheckerBrush}"/>
                                 <Image x:Name="PreviewImage" Canvas.Left="0" Canvas.Top="0" Stretch="Fill"/>
                                 <Canvas x:Name="GridCanvas" Canvas.Left="0" Canvas.Top="0"/>
+                                <Canvas x:Name="TextureContextCanvas" Canvas.Left="0" Canvas.Top="0" IsHitTestVisible="False">
+                                    <Path x:Name="SharedTexturePath" Stroke="#A0808080"/>
+                                </Canvas>
                                 <Canvas x:Name="UvCanvas" Canvas.Left="0" Canvas.Top="0"/>
                             </Canvas>
 
@@ -300,12 +368,19 @@
                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                    SelectionChanged="MaterialList_SelectionChanged"/>
 
-                    <TextBlock x:Name="TxtAdjustTitle" DockPanel.Dock="Top" Text="调整" FontSize="16" FontWeight="Bold"
-                     Foreground="#FF1F2733" Margin="16,18,16,6"/>
+                    <DockPanel DockPanel.Dock="Top" Height="30" Margin="16,14,16,6">
+                        <Button x:Name="PaletteSwapCancel" DockPanel.Dock="Right" Visibility="Collapsed" Padding="8,2"/>
+                        <TextBlock x:Name="TxtAdjustTitle" Text="调整" FontSize="16" FontWeight="Bold"
+                         Foreground="#FF1F2733" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="PaletteSwapStatus" Visibility="Collapsed" TextTrimming="CharacterEllipsis"
+                         Foreground="#FF176C9C" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    </DockPanel>
 
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
-                        <StackPanel x:Name="RightPanel" Orientation="Vertical" Margin="14,0,14,12"/>
-                    </ScrollViewer>
+                    <AdornerDecorator>
+                        <ScrollViewer x:Name="AdjustScroll" VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+                            <StackPanel x:Name="RightPanel" Orientation="Vertical" Margin="14,0,14,12"/>
+                        </ScrollViewer>
+                    </AdornerDecorator>
 
                 </DockPanel>
             </Border>

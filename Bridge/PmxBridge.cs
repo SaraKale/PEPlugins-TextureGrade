@@ -25,6 +25,7 @@ namespace TextureGrade.Bridge
         private IPXPmx _lastPmx;
         private readonly Dictionary<int, string> _originals = new Dictionary<int, string>();
         private readonly Dictionary<int, string> _lastTemp = new Dictionary<int, string>();
+        private readonly Dictionary<int, string> _beforePreview = new Dictionary<int, string>();
         private string _pmxDir;
 
         public PmxBridge(IPEPluginHost host)
@@ -47,7 +48,7 @@ namespace TextureGrade.Bridge
             {
                 var m = pmx.Material[i];
                 string rel = m.Tex ?? "";
-                string abs = string.IsNullOrEmpty(rel) ? null : Resolve(rel, _pmxDir);
+                string abs = TextureNaming.ResolveMaterialTexPath(rel, _pmxDir);
                 bool has = !string.IsNullOrEmpty(abs) && File.Exists(abs);
                 if (!_originals.ContainsKey(i)) _originals[i] = rel; // 仅在首次记录真正的原始值
 
@@ -60,41 +61,45 @@ namespace TextureGrade.Bridge
 
         public void ApplyPreview(int materialIndex, string absTexturePath)
         {
-            // 删除上一次同材质的临时文件，避免堆积
-            if (_lastTemp.TryGetValue(materialIndex, out var prev) && prev != absTexturePath && File.Exists(prev))
-                TryDelete(prev);
-            _lastTemp[materialIndex] = absTexturePath;
-
             var pmx = _host.Connector.Pmx.GetCurrentState();
-            pmx.Material[materialIndex].Tex = absTexturePath; // 临时文件用绝对路径，保证 PMXEditor 能解析
-            _host.Connector.Pmx.Update(pmx, PmxUpdateObject.Material, materialIndex);
-            _host.Connector.Form.UpdateList(UpdateObject.Material);
-            _host.Connector.View.PMDView.UpdateModel();
-            _host.Connector.View.PMDView.UpdateView();
+            _lastTemp.TryGetValue(materialIndex, out var prev);
+            if (prev == null || !IsTexturePath(pmx.Material[materialIndex].Tex, pmx.FilePath, prev))
+                _beforePreview[materialIndex] = TextureNaming.ResolveMaterialTexPath(pmx.Material[materialIndex].Tex,
+                    string.IsNullOrEmpty(pmx.FilePath) ? null : Path.GetDirectoryName(pmx.FilePath)) ?? pmx.Material[materialIndex].Tex ?? "";
+            pmx.Material[materialIndex].Tex = absTexturePath;
+            PushMaterial(pmx, materialIndex);
+            _lastTemp[materialIndex] = absTexturePath;
+            if (prev != null && !string.Equals(prev, absTexturePath, StringComparison.OrdinalIgnoreCase)) TryDelete(prev);
         }
 
         public void ApplySaved(int materialIndex, string absTexturePath)
         {
             var pmx = _host.Connector.Pmx.GetCurrentState();
-            string rel = TextureNaming.ToMaterialTexPath(absTexturePath, _pmxDir, GetOriginal(materialIndex));
+            // The user may have saved the model to a different directory since opening this panel.
+            _pmxDir = string.IsNullOrEmpty(pmx.FilePath) ? null : Path.GetDirectoryName(pmx.FilePath);
+            string rel = TextureNaming.ToMaterialTexPath(absTexturePath, _pmxDir);
             pmx.Material[materialIndex].Tex = rel;
+            PushMaterial(pmx, materialIndex);
+            if (_lastTemp.TryGetValue(materialIndex, out var tmp) && !string.Equals(tmp, absTexturePath, StringComparison.OrdinalIgnoreCase)) TryDelete(tmp);
             _lastTemp.Remove(materialIndex); // 已正式保存，不再视为临时
-            _host.Connector.Pmx.Update(pmx, PmxUpdateObject.Material, materialIndex);
-            _host.Connector.Form.UpdateList(UpdateObject.Material);
-            _host.Connector.View.PMDView.UpdateModel();
-            _host.Connector.View.PMDView.UpdateView();
+            _beforePreview.Remove(materialIndex);
         }
 
         public void Revert(int materialIndex)
         {
-            if (_lastTemp.TryGetValue(materialIndex, out var tmp) && File.Exists(tmp)) TryDelete(tmp);
-            _lastTemp.Remove(materialIndex);
-
             var pmx = _host.Connector.Pmx.GetCurrentState();
             pmx.Material[materialIndex].Tex = GetOriginal(materialIndex);
+            PushMaterial(pmx, materialIndex);
+            if (_lastTemp.TryGetValue(materialIndex, out var tmp)) TryDelete(tmp);
+            _lastTemp.Remove(materialIndex); _beforePreview.Remove(materialIndex);
+        }
+
+        private void PushMaterial(IPXPmx pmx, int materialIndex)
+        {
             _host.Connector.Pmx.Update(pmx, PmxUpdateObject.Material, materialIndex);
             _host.Connector.Form.UpdateList(UpdateObject.Material);
             _host.Connector.View.PMDView.UpdateModel();
+            try { _host.Connector.View.PMDView.UpdateModel_Material(materialIndex); } catch { }
             _host.Connector.View.PMDView.UpdateView();
         }
 
@@ -149,9 +154,26 @@ namespace TextureGrade.Bridge
 
         public void Cleanup()
         {
+            // Restore the persistent reference before deleting any preview still referenced by the model.
+            // If the host is unavailable, retain the file instead of leaving a dangling material path.
             foreach (var kv in _lastTemp)
-                if (File.Exists(kv.Value)) TryDelete(kv.Value);
-            _lastTemp.Clear();
+            {
+                try
+                {
+                    var pmx = _host.Connector.Pmx.GetCurrentState();
+                    if (pmx == null) continue;
+                    if (kv.Key < pmx.Material.Count && IsTexturePath(pmx.Material[kv.Key].Tex, pmx.FilePath, kv.Value))
+                    {
+                        if (!_beforePreview.TryGetValue(kv.Key, out var restore)) continue;
+                        pmx.Material[kv.Key].Tex = Path.IsPathRooted(restore)
+                            ? TextureNaming.ToMaterialTexPath(restore, string.IsNullOrEmpty(pmx.FilePath) ? null : Path.GetDirectoryName(pmx.FilePath)) : restore;
+                        PushMaterial(pmx, kv.Key);
+                    }
+                    TryDelete(kv.Value);
+                }
+                catch { /* A referenced preview must remain on disk if restoration fails. */ }
+            }
+            _lastTemp.Clear(); _beforePreview.Clear();
         }
 
         private string GetOriginal(int materialIndex)
@@ -195,11 +217,10 @@ namespace TextureGrade.Bridge
             return 210;
         }
 
-        private static string Resolve(string rel, string pmxDir)
-        {
-            if (Path.IsPathRooted(rel)) return rel;
-            return Path.Combine(pmxDir, rel);
-        }
+        private static bool IsTexturePath(string texturePath, string pmxFile, string absolute)
+            => string.Equals(TextureNaming.ResolveMaterialTexPath(texturePath,
+                string.IsNullOrEmpty(pmxFile) ? null : Path.GetDirectoryName(pmxFile)),
+                Path.GetFullPath(absolute), StringComparison.OrdinalIgnoreCase);
 
         private static void TryDelete(string path)
         {

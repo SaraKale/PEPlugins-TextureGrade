@@ -1,222 +1,56 @@
-# TextureGrade — PMXEditor 用テクスチャ調色プラグイン
-
-PMXEditor **テクスチャ調色プラグイン**です。Lightroom / Camera Raw の調色機能を模しています。
-プラグイン内でモデルのテクスチャに露出・カラー・HSL・カーブなどの調整をまとめて適用でき、
-**リアルタイムプレビュー & 非破壊**（元テクスチャは書き換えません）。
-仕上がりを確認してから 3D ビューへ反映、または新規テクスチャとして保存します。
+# TextureGrade — PMXEditor テクスチャ調整プラグイン
 
 [English](ReadMe.md) | [简体中文](ReadMe_sc.md) | [繁體中文](ReadMe_tc.md) | [日本語](ReadMe_ja.md)
 
-![TextureGrade](image/Preview_jp.jpg)
+元画像から非破壊でテクスチャを調整します。「モデルを更新」は一時プレビューを作成し、新規保存は現在の材質の参照先だけを変更します。
 
----
+## 調色とパレット
 
-## 一、機能
+- 露出、コントラスト、ハイライト、シャドウ、白黒点、ホワイトバランス、彩度、HSL、カーブ、レベル、RGB、明瞭度、シャープ。
+- 連続階調の白黒化と、独立したしきい値強度・境界値（0–255）。旧グラデーション効果と Lab 色環は削除済みです。
+- 元色→目標色の編集、元画像スポイト、手動追加、有効/削除/明度保持。再抽出は手動項目を保持します。
+- 同じ列の色をドラッグして交換できます（元色同士・目標色同士）。もう一方の列はそのままです。行番号とドロップ先を表示し、上下端で自動スクロールします。離れた色には「クリックで交換」または右クリックの「別の色と交換」を使い、自由にスクロールして相手を選べます。Esc または上部のキャンセルで終了。通常のクリックはピッカーを開きます。各行の有効・手動フラグと明度保持は移動せず、交換先で明度・色域制約を適用します。交換は一回で元に戻せます。ドラッグ中は再計算せず、離した時だけ色見本を更新し非同期プレビューします。
+- 元画像と参照画像の色数を個別に自動推定、または 1–128 色で手動指定できます。色差と面積から主要色群を推定し、微細な階調差や孤立ノイズを無視します。物体の意味的な領域分割ではありません。
+- パレット内で参照画像を読み込み、必要なら矩形範囲を選択して生成します。相対明度、面積比、暗部から明部への順序を考慮し、元色数が十分なら全参照色を使用します。
+- 制御色間の色相・彩度も変換し、元の色相の残留を減らします。旧プリセットの補間は維持され、再生成で修正版を適用します。
+- ピッカーは HSV、RGB、OKLCH。明度保持は独立して切り替えられ、既定では画素ごとの OKLCH L を保ちます。色域外では彩度を下げます。8 ビット量子化や後段の調整による明度差は生じ得ます。
+- パレット全体の補間を他の調整より先に適用します。手動の強度・半径はなく、統計転送機能は削除済みです。
+- 履歴、材質別記憶、プリセットに対応。生成済みのパレットは参照画像なしで再現できます。
 
-### 調色（22 項目 + HSL チャンネル別 + Lab カラーホイール）
+## UV、保存、プリセット
 
-| 折りたたみグループ | パラメーター |
+- ホイール拡縮、右ドラッグ移動、面クリック、UV 島ダブルクリック。Shift で追加、Ctrl で解除。PMXEditor と頂点選択を送受信できます。
+- 左の選択ツールまたは編集メニューから反転（`Ctrl+I`）、`Ctrl+A` で全選択。文字入力中の編集ショートカットは保持します。
+- 材質切替・再読込で UV 選択と受信頂点を復元します。形状や UV が変わった場合は古い選択を破棄します。
+- 既定は選択部分のみ、選択が空なら画像全体を調整します。全選択の反転後も同じ規則です。「画像全体」は選択を保持して無視し、共有領域への影響を表示します。UV 非表示は選択や調色を変更しません。
+- 大量の頂点はまとめた描画層を使用。ドラッグ中は長辺 1024 ピクセル、終了後は元の解像度で描画します。
+- 新規保存で形式、元/半分/四分の一/任意サイズ、JPEG 品質を選択できます。クイック PNG 保存もあります。可能なら PMX からの相対パスを使用します。
+- 白黒マスク、UV 線、選択 Alpha PNG を出力できます。選択部分の Alpha は 255、それ以外は 0 で元の Alpha を置換します。RGB は白/元画像/調整結果を選択。画像全体モードでも明示的な UV 選択を使用し、元画像やモデル参照は変更しません。
+- プリセットの名前変更、名前/更新日時/手動順、上下移動に対応。順序と並び替え方法は `presets/order.txt` と `sort.txt` に保存します。
+
+| 形式 | Alpha と圧縮 |
 | --- | --- |
-| 基本 | 露出 / コントラスト / ハイライト / シャドウ / 白レベル / 黒レベル |
-| カラー | 色温度 / 色かぶり補正 / 自然な彩度 / 彩度 / 色相 / カラーバランス R·G·B |
-| HSL（チャンネル別） | 赤·橙·黄·緑·水·青·紫·マゼンタ × 色相 / 彩度 / 明度（全 24 スライダー） |
-| カーブ / レベル / RGB / HSV | カーブ / レベル黒点·白点·ガンマ / RGB·R·G·B / HSV·明度 |
-| ディテール | 明瞭度 / シャープ |
-| エフェクト | グラデーション / 白黒 / 反転 / 2 値化 |
-| Lab カラーホイール | 等明度色相環（外環 = 色相、内円 = 彩度）。明度 L* をロックして色だけ変更可能 |
+| PNG / TGA / DDS Raw | 可逆、完全な Alpha |
+| DDS DXT1 | 非可逆、二値 Alpha |
+| DDS DXT3 / DXT5 | 非可逆、4 ビット/補間 Alpha |
+| JPEG / BMP / GIF / TIFF | 白背景へ合成。JPEG/GIF は非可逆、GIF はインデックス色 |
 
-パイプラインの順序は固定です：ホワイトバランス → 露出/コントラスト → ハイライト/シャドウ →
-白黒レベル → レベル補正 → 彩度 → 自然な彩度 → HSL → 色相 → カラーバランス → HSV →
-カーブ → RGB → 明瞭度/シャープ → エフェクト → Lab カラーホイール。
+UI と内蔵説明は英語・簡体字・繁体字・日本語に対応。既存のカスタム `data` 説明ファイルは自動上書きしません。
 
-### 選択範囲と UV
+## Build / 构建
 
-- 左パネルは「テクスチャ + UV プレビュー」：ホイールでカーソル中心にズーム、右ドラッグでいつでも平移。
-- **クリック** で UV 三角面を 1 枚選択（Shift で追加 / Ctrl で削除）。
-- **ダブルクリック** で**連結した UV アイランド**をまとめて選択（Blender の `L` キー相当。連結判定は Union-Find で計算）。
-- 左ドラッグ = 矩形選択（選択モード）または平移（平移モード）。
-- **選択範囲がある場合、調色は選択範囲のみ**に適用され、それ以外は元のピクセルのままです。
+Windows, .NET Framework 4.8, PMXEditor 0.2.7.5 SDK. No new NuGet dependencies.
 
-### 非破壊ワークフロー
-
-1. スライダーはメモリ上の `WriteableBitmap` プレビューを変更するだけで、**元テクスチャは 1 バイトも書き換えません**。
-2. 「モデルを更新」で結果を一時 PNG に書き出し、PMXEditor の 3D ビューへ反映してリアルタイムに確認できます。
-3. 「新規テクスチャに保存」で `xxx_new.png` として書き出し、材質の参照先を変更します。
-4. 「元に戻す」で `Material.Tex` を元の値に復元し、一時ファイルを削除します。
-
-### その他の機能
-
-- **材質一覧**：サムネイル + 番号·名称 + 「変更済み」バッジ。
-- **材質ごとのパラメーター**：材質別に記憶されるため、切り替えても失われません。
-- **プリセット**：調整値を JSON で保存し、ダブルクリックで適用。プラグイン配下の `presets\` に格納。
-- **ヒストグラム**：RGB 重ね合わせ、リアルタイム更新（表示メニューで非表示可）。
-- **元画像比較**：元テクスチャと調整結果をワンクリックで切り替え（パラメーターは保持）。
-- **マスク・UV レイアウト書き出し**：選択範囲マスク / 現在の材質マスク / 全材質マスク（白黒 PNG）、
-  UV レイアウト図（透明背景 + ワイヤーフレーム PNG）。
-- **多言語**：English / 简体中文 / 繁體中文 / 日本語。UI・ステータスバー・メッセージボックスを完全翻訳。
-- **ヘルプウィンドウ**：プラグイン配下 `data\` の言語別マニュアルを読み込みます。ウィンドウは自由にリサイズ可能。
-
----
-
-## 二、ディレクトリ構成
-
-```
-PEPlugins-TextureGrade/
-├─ MyPlugin.cs                 # プラグイン入口（PEPluginClass + PEPluginOption + Run）
-├─ PluginForm.cs               # WinForms シェル：メニューバー（MenuStrip）+ ElementHost
-├─ Bridge/
-│  ├─ IPMDBridge.cs            # ホスト機能の抽象化（PMX 取得 / 材質反映 / 一時ファイル削除）
-│  └─ PmxBridge.cs             # PEPlugin API の実装
-├─ Models/
-│  ├─ ModelSnapshot.cs         # 材質スナップショット（名称/テクスチャパス/拡散色/面数）
-│  ├─ GradeSettings.cs         # パラメーター表（未設定キーは 0 を返すインデクサー）
-│  ├─ MiniJson.cs              # 依存ゼロの極簡 JSON（プリセット読み書き）
-│  ├─ PresetStore.cs           # プリセット保存（プラグイン配下 presets\、不可書時は AppData）
-│  └─ AppPaths.cs              # 「DLL と同じフォルダ」の解決 + 書き込み可否判定
-├─ ColorGrade/
-│  ├─ ColorMath.cs             # 基本的な色演算
-│  ├─ IGradeEffect.cs / GradePipeline.cs
-│  ├─ Effects_Basic.cs / Effects_Color.cs / Effects_Detail.cs
-│  ├─ Effects_Fx.cs / Effects_HslBands.cs / Effects_LabColorize.cs
-│  └─ LabColor.cs              # sRGB ↔ Lab(D65) ↔ LCh + MaxChroma 二分探索
-├─ TextureIO/
-│  ├─ TextureLoader.cs         # テクスチャ読み込みと PNG 保存
-│  ├─ TgaReader.cs             # 自作 TGA デコーダー
-│  ├─ DdsReader.cs             # 自作 DDS デコーダー（無圧縮 / DXT1·3·5）
-│  ├─ ThumbnailFactory.cs      # 材質一覧のサムネイル（デコード時に間引き）
-│  ├─ TextureSize.cs           # ヘッダのみ読み取ってサイズ取得
-│  ├─ MaskWriter.cs            # 白黒マスク PNG
-│  └─ TextureNaming.cs         # `xxx_new.png` / 一時プレビューの命名
-├─ WpfUI/
-│  ├─ MainPanel.xaml(.cs)      # メイン画面（左プレビュー + 右 材質/調整）
-│  ├─ LabWheel.cs              # 等明度色相環コントロール
-│  └─ HelpWindow.cs            # 操作説明ウィンドウ（リサイズ可、data\*.txt を読む）
-├─ Localization/
-│  ├─ L.cs                     # 言語 enum + 4 言語テーブル + lang.txt 読み書き
-│  ├─ DefaultManual.cs         # 4 言語の内蔵マニュアル
-│  └─ OperationManual.cs       # data\ 配下 4 ファイルの生成と解決
+```powershell
+dotnet build PEPlugins-TextureGrade.csproj -c Release -p:PmxEditorDir="D:\Tools\PmxEditor_0275"
+dotnet build tests/TextureGrade.Tests.csproj -c Release -p:PmxEditorDir="D:\Tools\PmxEditor_0275"
+.\tests\bin\Release\net48\TextureGrade.Tests.exe .\artifacts\verification
 ```
 
----
+`PmxEditorDir` must contain `Lib/PEPlugin/PEPlugin.dll` and the PMXEditor runtime libraries. If a sibling `PmxEditor_0275` directory exists, the default path is sufficient.
 
-## 三、ビルド方法
+Output: `bin/Release/net48/PEPlugins-TextureGrade.dll`. Copy the plugin DLL into PMXEditor's plugin folder and restart PMXEditor. Do not replace the host's runtime libraries with build output. `bin/`, `obj/`, and `artifacts/` are ignored by Git; user-provided originals in `ref/` are retained.
 
-### 環境
+## Source / 来源
 
-- ターゲットフレームワーク .NET Framework 4.8（`net48`）
-- `net48` をビルドできる SDK / MSBuild（Visual Studio 2019 以降、または .NET Framework 4.8 Targeting Pack を入れた `dotnet build`）
-- **NuGet 依存ゼロ**：テクスチャのデコードは GDI+ と同梱の自作デコーダーのみ。restore は不要です
-
-### 依存 DLL
-
-PMXEditor インストール先から以下の DLL が必要です（既定の HintPath は `..\..\PmxEditor_0275\Lib\...`。
-実際のパスに合わせて `PEPlugins-TextureGrade.csproj` を編集してください）：
-
-```
-PEPlugin.dll      → ..\..\PmxEditor_0275\Lib\PEPlugin\PEPlugin.dll
-PmxEditorCore.dll → ..\..\PmxEditor_0275\Lib\System\PmxEditorCore.dll
-PmxEditorLib.dll  → ..\..\PmxEditor_0275\Lib\System\PmxEditorLib.dll
-PmxLib.dll        → ..\..\PmxEditor_0275\Lib\System\PmxLib.dll
-SlimDX.dll        → ..\..\PmxEditor_0275\Lib\SlimDX\x86\SlimDX.dll
-```
-
-### ビルド
-
-```bash
-cd PEPlugins-TextureGrade
-dotnet build -c Release
-```
-
-出力は `bin\Release\net48\` に生成されます。
-
-> よく出る警告：`MSB3270 … SlimDX のプロセッサ アーキテクチャ x86 が MSIL と一致しない`。
-> 警告のみで問題ありません。PMXEditor は 32 ビットプロセスで、プラグインは AnyCPU として読み込まれ、
-> 実行時のビット数はホストが決めます。消したい場合は csproj の SlimDX 参照に
-> `<Private>true</Private>` を追加するか、プロジェクトのプラットフォームを x86 にしてください。
-
----
-
-## 四、インストール方法
-
-1. `PEPlugins-TextureGrade.dll` をビルドします。
-2. PMXEditor\_plugin のプラグインフォルダにコピーします。
-3. PMXEditor を起動し、モデルを開きます。
-4. プラグイン / 右クリックメニューから **Texture Grade** を選んでウィンドウを開きます。
-
-> **書き込み可能なフォルダ**に置いてください（`Program Files` 配下は避ける）。
-> プラグインは DLL と同じ階層に `presets\`、`data\`、`lang.txt` を書き込みます。
-> 書き込めない場合は `%APPDATA%\TextureGrade\` にフォールバックしますが、
-> 手動で置いたプリセットやマニュアルが読めなくなる可能性があります。
-
-### 初回起動時に自動生成されるファイル
-
-```
-<プラグインフォルダ>\
-├─ lang.txt                                # 言語設定
-├─ presets\*.json                          # 調色プリセット
-└─ data\
-   ├─ TextureGrade_Operation_EN.txt        # English
-   ├─ TextureGrade_Operation_SC.txt        # 简体中文
-   ├─ TextureGrade_Operation_TC.txt        # 繁體中文
-   └─ TextureGrade_Operation_JP.txt        # 日本語
-```
-
-4 ファイルのうち不足分だけを生成し、**既存ファイルは上書きしません**。
-内容をカスタマイズしたい場合は該当 txt を直接編集し、説明ウィンドウの「再読み込み」を押してください。
-
----
-
-## 五、使い方
-
-1. 右側の**材質一覧**で材質を選ぶ → 左パネルにテクスチャと UV が読み込まれます。
-2. 部分的に調整したい場合は、左パネルでクリック / ダブルクリック / 矩形選択（未選択なら全体に適用）。
-3. 右側のグループを展開してスライダーを動かすと、プレビューとヒストグラムがリアルタイムに更新されます。
-4. 「元画像比較」で変更前後を確認。パラメーターは取り消し / やり直し / リセットできます。
-5. 「モデルを更新」で 3D 表示を確認し、納得したら「新規テクスチャに保存」で `xxx_new.png` を書き出します。
-
-### 対応テクスチャ形式
-
-| 形式 | 対応状況 |
-| --- | --- |
-| PNG / JPG / BMP / GIF / TIFF | GDI+ 標準デコード |
-| TGA | 同梱の自作デコーダー（RLE / 非 RLE、16/24/32 ビット） |
-| DDS | 同梱の自作デコーダー（無圧縮 + DXT1 / DXT3 / DXT5） |
-
----
-
-## 六、多言語
-
-- メニューバー **言語** → English / 简体中文 / 繁體中文 / 日本語。
-- 選択内容はプラグインフォルダの `lang.txt` に保存され、次回起動時に引き継がれます。初回起動時はシステムの UI 言語から推測します。
-- メイン画面は「登録型の再取得」（`MainPanel.ApplyLanguage()`）を採用しており、言語切り替えで**パネルを再構築しません**。
-  折りたたみ状態・スクロール位置・現在の材質・調整済みパラメーターはすべて保持されます。メニューバーは丸ごと再構築します。
-- 言語を切り替えると説明ウィンドウは `data\` 配下の該当ファイルを読み直します。開いている場合は即座に更新されます。
-- メッセージボックスやファイルダイアログの**ボタン文字（OK / はい / いいえ）は Windows の表示言語に従います**。
-  これらは OS が描画するため、アプリ側からは変更できません。タイトルと本文はすべて翻訳済みです。
-
-### 文言の追加
-
-UI の文言はすべて `Localization/L.cs` の `L.T(key)` / `L.F(key, args)` を通します。
-キーを追加する際は** 4 言語すべてを同時に追加**してください。未登録の場合は英語にフォールバックします。
-
----
-
-## 七、既知の制限 / トラブルシューティング
-
-| 症状 | 説明 |
-| --- | --- |
-| プラグイン一覧に項目が出ない | DLL と `PEPlugin.dll` の配置関係、および登録メニュー名 `Texture Grade` を確認してください。 |
-| テクスチャを差し替えても 3D ビューが更新されない | PMXEditor のバージョンによっては `UpdateObject.Material` で再描画されません。`PmxBridge` で `UpdateObject.All` を試してください。 |
-| 一部の DDS が開けない | 無圧縮と DXT1·3·5 のみ対応です。その他の圧縮形式は PNG に変換してください。 |
-| 連結アイランドの選択が細かすぎる / 大きすぎる | UV 座標を `1e-4` で量子化して辺の共有を判定しています。UV に継ぎ目があると複数ブロックに分かれます。 |
-| 巨大テクスチャが重い | 調色とヒストグラムは 1 回の走査で計算しているため、4096² を超えると遅延を感じます。サムネイルはデコード時に間引くため影響ありません。 |
-
----
-
-## 八、License / 備考
-
-ライセンスは [GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.ja.html) です。
-
-以下のプラグインを参考にしました：
-- どるる式UVエディタ
-- https://bowlroll.net/file/15244
+Fork: [Loki-0228/PEPlugins-TextureGrade](https://github.com/Loki-0228/PEPlugins-TextureGrade). Original project: [SaraKale/PEPlugins-TextureGrade](https://github.com/SaraKale/PEPlugins-TextureGrade). Selected v1.0.2 changes were ported from [f1a51a4](https://github.com/SaraKale/PEPlugins-TextureGrade/commit/f1a51a4c865602231d35784940e342bce5671c19), preserving the fork's palette and performance work. See [CHANGELOG.md](CHANGELOG.md) and [GPL-3.0 license](LICENSE).

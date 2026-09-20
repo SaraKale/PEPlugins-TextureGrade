@@ -44,6 +44,7 @@ namespace TextureGrade
             _panel = new MainPanel(bridge);
             // 面板里的「对比原图」按钮与菜单勾选状态保持同步
             _panel.CompareChanged += SyncCompareMenu;
+            _panel.ShowUVChanged += SyncUvMenu;
 
             Text = L.T("App.Title");
 
@@ -85,9 +86,11 @@ namespace TextureGrade
             var file = new ToolStripMenuItem(L.T("Menu.File"));
             file.DropDownItems.Add(Make("File.ReRead", () => _panel.ReRead()));
             file.DropDownItems.Add(Make("File.RefreshModel", () => _panel.RefreshModel()));
-            file.DropDownItems.Add(Make("File.SaveNew", () => _panel.SaveNew()));
+            file.DropDownItems.Add(Make("File.SaveNewAs", () => _panel.SaveNewAs()));
+            file.DropDownItems.Add(Make("File.SavePngQuick", () => _panel.SaveNew()));
             file.DropDownItems.Add(Make("File.ExportUvLayout", () => _panel.ExportUvLayout()));
             file.DropDownItems.Add(Make("File.ExportSelectionMask", () => _panel.ExportSelectionMask()));
+            file.DropDownItems.Add(Make("File.ExportSelectionAlpha", () => _panel.ExportSelectionAlpha()));
             file.DropDownItems.Add(Make("File.ExportMaterialMask", () => _panel.ExportCurrentMaterialMask()));
             file.DropDownItems.Add(Make("File.ExportAllMasks", () => _panel.ExportAllMasks()));
             file.DropDownItems.Add(Make("File.OpenPresetFolder", () => _panel.OpenPresetFolder()));
@@ -123,6 +126,7 @@ namespace TextureGrade
             edit.DropDownItems.Add(new ToolStripSeparator());
             edit.DropDownItems.Add(Make("Edit.SelectIsland", () => _panel.SelectConnectedIsland()));
             edit.DropDownItems.Add(Make("Edit.SelectAll", () => _panel.SelectAllUv()));
+            edit.DropDownItems.Add(Make("Edit.InvertSel", () => _panel.InvertUVSelection()));
             edit.DropDownItems.Add(Make("Edit.ClearSel", () => _panel.ClearUVSelection()));
 
             // ---------- 视图 ----------
@@ -256,6 +260,11 @@ namespace TextureGrade
         private void SyncCompareMenu()
         {
             if (_miCompare != null) _miCompare.Checked = _panel.ComparingOriginal;
+        }
+
+        private void SyncUvMenu()
+        {
+            if (_miShowUV != null) _miShowUV.Checked = _panel.ShowUV;
         }
 
         // ================= 语言 =================
