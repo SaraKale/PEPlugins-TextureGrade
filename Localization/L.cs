@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -194,10 +194,10 @@ namespace TextureGrade.Localization
 
             add("About.Title", "About Texture Grade", "关于 Texture Grade", "關於 Texture Grade", "Texture Grade について");
             add("About.Body",
-                "Texture Grade — PMX texture grading plug-in\nNon-destructive grading like Lightroom / Camera Raw.\n\nSupported formats: PNG / JPG / BMP / GIF / TIFF / TGA / DDS (DXT1,3,5)\n\nversion: 1.0.1\nby: SaraKale",
-                "Texture Grade — PMX 贴图调色插件\n仿 Lightroom / Camera Raw 的非破坏式贴图调色。\n\n贴图格式支持：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.1\nby:SaraKale",
-                "Texture Grade — PMX 貼圖調色外掛\n仿 Lightroom / Camera Raw 的非破壞式貼圖調色。\n\n貼圖格式支援：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.1\nby:SaraKale",
-                "Texture Grade — PMX テクスチャ調整プラグイン\nLightroom / Camera Raw 風の非破壊調色。\n\n対応形式：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.1\nby:SaraKale");
+                "Texture Grade — PMX texture grading plug-in\nNon-destructive grading like Lightroom / Camera Raw.\n\nSupported formats: PNG / JPG / BMP / GIF / TIFF / TGA / DDS (DXT1,3,5)\n\nversion: 1.0.3\nby: SaraKale",
+                "Texture Grade — PMX 贴图调色插件\n仿 Lightroom / Camera Raw 的非破坏式贴图调色。\n\n贴图格式支持：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.3\nby:SaraKale",
+                "Texture Grade — PMX 貼圖調色外掛\n仿 Lightroom / Camera Raw 的非破壞式貼圖調色。\n\n貼圖格式支援：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.3\nby:SaraKale",
+                "Texture Grade — PMX テクスチャ調整プラグイン\nLightroom / Camera Raw 風の非破壊調色。\n\n対応形式：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.3\nby:SaraKale");
 
             // ---------------- 主界面固定文案 ----------------
             add("Title.Preview", "Texture + UV Preview", "贴图 + UV 预览", "貼圖 + UV 預覽", "テクスチャ + UV プレビュー");

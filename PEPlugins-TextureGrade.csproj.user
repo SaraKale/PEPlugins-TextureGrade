@@ -5,7 +5,16 @@
     <Compile Update="PluginForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="WpfUI\ChoiceDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="WpfUI\HelpWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="WpfUI\InputDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="WpfUI\SaveTextureDialog.cs">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>

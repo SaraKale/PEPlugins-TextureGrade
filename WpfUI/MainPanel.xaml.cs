@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;   // ToggleButton 在这里，不在 System.Windows.Controls
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -117,7 +118,11 @@ namespace TextureGrade.WpfUI
 
         // 直方图：256 级 RGB 计数（原图 / 当前调色结果各一份）
         private int[] _histOriginal, _histGraded;
-        private bool _showHistogram = true;
+        // 默认关闭：直方图 + 三组预览工具都收起，把高度让给贴图画布（视图菜单可随时开）
+        private bool _showHistogram;
+
+        // 界面状态持久化（直方图开关 / 预览工具三组折叠），存插件目录 ui.json
+        private readonly UiState _uiState = new UiState();
 
         // 分材质保存的调色参数：材质索引 -> 参数快照
         private readonly Dictionary<int, Dictionary<string, double>> _matParams
@@ -228,6 +233,17 @@ namespace TextureGrade.WpfUI
             LocTip(BtnRecvVerts, "Tip.RecvVerts");
             LocTip(BtnSendVerts, "Tip.SendVerts");
 
+            // 预览工具三组：点胶囊开关折叠/展开，状态记在 ui.json（默认全收起）
+            WireToolGroup(ToolsViewToggle, ToolsViewBody, UiState.KeyToolsView);
+            WireToolGroup(ToolsSelToggle, ToolsSelBody, UiState.KeyToolsSelection);
+            WireToolGroup(ToolsVertToggle, ToolsVertBody, UiState.KeyToolsVertices);
+            LocContent(ToolsViewToggle, "Tools.View");
+            LocContent(ToolsSelToggle, "Tools.Selection");
+            LocContent(ToolsVertToggle, "Tools.Vertices");
+
+            // 直方图默认关闭，上次手动开过就继续保持
+            SetHistogramVisible(_uiState.IsOn(UiState.KeyHistogram));
+
             BuildRightPanel();
             RefreshPresetList();
             ApplyLanguage();      // 按当前语言填一遍全部文案（XAML 里的中文只是兜底默认值）
@@ -285,10 +301,7 @@ namespace TextureGrade.WpfUI
             if (TxtMaterialTitle != null) TxtMaterialTitle.Text = L.T("Title.Materials");
             if (TxtAdjustTitle != null) TxtAdjustTitle.Text = L.T("Title.Adjust");
             if (TxtHistLabel != null) TxtHistLabel.Text = L.T("Hist.Label");
-            TxtViewTools.Text = L.T("Tools.View");
-            TxtSelectionTools.Text = L.T("Tools.Selection");
-            TxtVertexTools.Text = L.T("Tools.Vertices");
-            TxtSourceTools.Text = L.T("Tools.Source");
+            TxtSourceTools.Text = L.T("Tools.Source");   // 三组折叠开关的文案由 LocContent 登记，这里不用再管
             TxtOutputTools.Text = L.T("Tools.Output");
             TxtHistoryTools.Text = L.T("Tools.History");
             SyncTextureScopeUi();
@@ -365,6 +378,29 @@ namespace TextureGrade.WpfUI
             _showHistogram = value;
             if (HistogramBox != null) HistogramBox.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
             if (value) DrawHistogram();
+            if (_uiState != null && _uiState.Set(UiState.KeyHistogram, value)) _uiState.Save();
+        }
+
+        /// <summary>
+        /// 把一组预览工具绑到它的折叠开关上：胶囊的勾选状态 <-> 按钮行的可见性。
+        /// 初始状态从 ui.json 读（键不存在时是 0 = 收起）。
+        /// </summary>
+        private void WireToolGroup(ToggleButton chip, WrapPanel body, string key)
+        {
+            bool on = _uiState.IsOn(key);
+            chip.IsChecked = on;
+            body.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+
+            chip.Checked += (s, e) =>
+            {
+                body.Visibility = Visibility.Visible;
+                if (_uiState.Set(key, true)) _uiState.Save();
+            };
+            chip.Unchecked += (s, e) =>
+            {
+                body.Visibility = Visibility.Collapsed;
+                if (_uiState.Set(key, false)) _uiState.Save();
+            };
         }
 
         /// <summary>是否正在显示原图（对比模式）。</summary>

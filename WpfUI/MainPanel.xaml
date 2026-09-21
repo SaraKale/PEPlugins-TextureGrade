@@ -57,17 +57,45 @@
             <Setter Property="Padding" Value="10,5"/>
             <Setter Property="Margin" Value="0,0,6,4"/>
         </Style>
-        <Style x:Key="PreviewToolLabel" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="#FF687383"/>
-            <Setter Property="Width" Value="70"/>
-            <Setter Property="Margin" Value="0,7,8,0"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
-        </Style>
+        <!-- 组名已移到折叠胶囊上，原来的 PreviewToolLabel 不需要了 -->
         <Style x:Key="FooterToolLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Foreground" Value="#FF687383"/>
             <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+
+        <!-- 预览工具三组的折叠开关：一行小胶囊，展开时高亮 + 箭头翻转。
+             同样必须走 ControlTemplate 里的 Trigger，别在代码里手改箭头文字。 -->
+        <ControlTemplate x:Key="ToolGroupToggleTemplate" TargetType="ToggleButton">
+            <Border x:Name="hdbd" CornerRadius="12" Background="#FFF1F3F6"
+                    BorderBrush="#FFD3D8DF" BorderThickness="1" Padding="11,4"
+                    SnapsToDevicePixels="True">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="arrow" Text="▶" FontSize="9" Foreground="#FF6B7684"
+                               VerticalAlignment="Center" Margin="0,1,6,0"/>
+                    <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="hdbd" Property="Background" Value="#FFE4E8ED"/>
+                    <Setter TargetName="hdbd" Property="BorderBrush" Value="#FFC3C9D1"/>
+                </Trigger>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter TargetName="arrow" Property="Text" Value="▼"/>
+                    <Setter TargetName="hdbd" Property="Background" Value="#FFDCEAF9"/>
+                    <Setter TargetName="hdbd" Property="BorderBrush" Value="#FF8FBEEA"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+        <Style x:Key="ToolGroupToggle" TargetType="ToggleButton">
+            <Setter Property="Template" Value="{StaticResource ToolGroupToggleTemplate}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#FF3C4450"/>
+            <Setter Property="Margin" Value="0,0,7,0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Cursor" Value="Hand"/>
         </Style>
 
         <!-- 主按钮（蓝底，用于「刷新模型」这类主操作） -->
@@ -274,43 +302,41 @@
                     <TextBlock x:Name="UvReadout" DockPanel.Dock="Bottom" Foreground="#FF5A6472"
                      FontSize="14" Margin="16,8,16,0" Text="(U: —, V: —)"/>
 
-                    <!-- Grouped tools retain their meaning when buttons wrap in a narrow preview. -->
+                    <!-- 预览工具：视图 / 选择 / 顶点同步 三组各自可折叠。
+                         默认全部收起，只留一行开关胶囊，把高度让给贴图画布；
+                         折叠状态记在插件目录的 ui.json，下次启动保持。 -->
                     <StackPanel x:Name="PreviewTools" DockPanel.Dock="Bottom" Margin="16,10,16,0">
-                        <DockPanel LastChildFill="True">
-                            <TextBlock x:Name="TxtViewTools" Text="视图" Style="{StaticResource PreviewToolLabel}"/>
-                            <WrapPanel>
-                                <Button x:Name="BtnFit" Content="适配" Style="{StaticResource PreviewToolButton}"/>
-                                <Button x:Name="BtnActual" Content="100%" Style="{StaticResource PreviewToolButton}"/>
-                                <Button x:Name="BtnGrid" Content="网格" Style="{StaticResource PreviewToolButton}"/>
-                                <Button x:Name="BtnToggleUV" Content="隐藏 UV" Style="{StaticResource PreviewToolButton}"/>
-                                <Button x:Name="BtnCompare" Content="对比原图" Style="{StaticResource PreviewToolButton}"/>
-                            </WrapPanel>
-                        </DockPanel>
-                        <Border BorderBrush="#FFE2E6EB" BorderThickness="0,1,0,0" Margin="0,3,0,0" Padding="0,6,0,0">
-                            <DockPanel LastChildFill="True">
-                                <TextBlock x:Name="TxtSelectionTools" Text="选择" Style="{StaticResource PreviewToolLabel}"/>
-                                <WrapPanel>
-                                    <Button x:Name="BtnSelectMode" Content="选面" Style="{StaticResource PreviewToolButton}"/>
-                                    <Button x:Name="BtnMode" Content="平移" Style="{StaticResource PreviewToolButton}"/>
-                                    <Button x:Name="BtnIsland" Content="选连通块" Style="{StaticResource PreviewToolButton}"/>
-                                    <Button x:Name="BtnInvertSel" Content="反选 UV 选区" Style="{StaticResource PreviewToolButton}"/>
-                                    <Button x:Name="BtnClearSel" Content="清空选区" Style="{StaticResource PreviewToolButton}"/>
-                                </WrapPanel>
-                            </DockPanel>
-                        </Border>
-                        <Border BorderBrush="#FFE2E6EB" BorderThickness="0,1,0,0" Margin="0,3,0,0" Padding="0,6,0,0">
-                            <DockPanel LastChildFill="True">
-                                <TextBlock x:Name="TxtVertexTools" Text="顶点同步" Style="{StaticResource PreviewToolLabel}"/>
-                                <WrapPanel>
-                                    <Button x:Name="BtnRecvVerts" Content="从模型接收" Style="{StaticResource PreviewToolButton}"/>
-                                    <Button x:Name="BtnSendVerts" Content="发送到模型" Style="{StaticResource PreviewToolButton}"/>
-                                </WrapPanel>
-                            </DockPanel>
-                        </Border>
+                        <WrapPanel>
+                            <ToggleButton x:Name="ToolsViewToggle" Content="视图" Style="{StaticResource ToolGroupToggle}"/>
+                            <ToggleButton x:Name="ToolsSelToggle" Content="选择" Style="{StaticResource ToolGroupToggle}"/>
+                            <ToggleButton x:Name="ToolsVertToggle" Content="顶点同步" Style="{StaticResource ToolGroupToggle}" Margin="0"/>
+                        </WrapPanel>
+
+                        <WrapPanel x:Name="ToolsViewBody" Margin="6,7,0,0" Visibility="Collapsed">
+                            <Button x:Name="BtnFit" Content="适配" Style="{StaticResource PreviewToolButton}"/>
+                            <Button x:Name="BtnActual" Content="100%" Style="{StaticResource PreviewToolButton}"/>
+                            <Button x:Name="BtnGrid" Content="网格" Style="{StaticResource PreviewToolButton}"/>
+                            <Button x:Name="BtnToggleUV" Content="隐藏 UV" Style="{StaticResource PreviewToolButton}"/>
+                            <Button x:Name="BtnCompare" Content="对比原图" Style="{StaticResource PreviewToolButton}"/>
+                        </WrapPanel>
+
+                        <WrapPanel x:Name="ToolsSelBody" Margin="6,7,0,0" Visibility="Collapsed">
+                            <Button x:Name="BtnSelectMode" Content="选面" Style="{StaticResource PreviewToolButton}"/>
+                            <Button x:Name="BtnMode" Content="平移" Style="{StaticResource PreviewToolButton}"/>
+                            <Button x:Name="BtnIsland" Content="选连通块" Style="{StaticResource PreviewToolButton}"/>
+                            <Button x:Name="BtnInvertSel" Content="反选 UV 选区" Style="{StaticResource PreviewToolButton}"/>
+                            <Button x:Name="BtnClearSel" Content="清空选区" Style="{StaticResource PreviewToolButton}"/>
+                        </WrapPanel>
+
+                        <WrapPanel x:Name="ToolsVertBody" Margin="6,7,0,0" Visibility="Collapsed">
+                            <Button x:Name="BtnRecvVerts" Content="从模型接收" Style="{StaticResource PreviewToolButton}"/>
+                            <Button x:Name="BtnSendVerts" Content="发送到模型" Style="{StaticResource PreviewToolButton}"/>
+                        </WrapPanel>
                     </StackPanel>
 
-                    <!-- 直方图（视图菜单可开关；调色后实时更新，用来判断曝光/色彩分布） -->
-                    <Border x:Name="HistogramBox" DockPanel.Dock="Bottom" Margin="16,10,16,0"
+                    <!-- 直方图（视图菜单可开关；默认关闭，状态记在 ui.json。
+                         调色后实时更新，用来判断曝光/色彩分布） -->
+                    <Border x:Name="HistogramBox" DockPanel.Dock="Bottom" Margin="16,10,16,0" Visibility="Collapsed"
                             Background="#FFFBFCFD" BorderBrush="#FFC9CDD4" BorderThickness="1"
                             CornerRadius="4">
                         <DockPanel>
@@ -361,7 +387,7 @@
 
                     <TextBlock x:Name="TxtMaterialTitle" DockPanel.Dock="Top" Text="材质列表" Style="{StaticResource CardTitle}"/>
 
-                    <ListBox x:Name="MaterialList" DockPanel.Dock="Top" MaxHeight="270" Margin="12,0,12,4"
+                    <ListBox x:Name="MaterialList" DockPanel.Dock="Top" MaxHeight="200" Margin="12,0,12,4"
                    FontSize="15"
                    ItemTemplate="{StaticResource MaterialRowTemplate}"
                    ItemContainerStyle="{StaticResource MaterialItem}"

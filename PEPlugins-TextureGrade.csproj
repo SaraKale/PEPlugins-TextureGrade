@@ -13,7 +13,7 @@
     <LangVersion>latest</LangVersion>
     <AssemblyTitle>Texture Grade</AssemblyTitle>
     <Description>PMXEditor TextureGrade Plugins</Description>
-    <FileVersion>1.0.1.0</FileVersion>
+    <FileVersion>1.0.3.0</FileVersion>
     <PmxEditorDir Condition="'$(PmxEditorDir)' == '' And Exists('..\PmxEditor_0275\Lib\PEPlugin\PEPlugin.dll')">$(MSBuildProjectDirectory)\..\PmxEditor_0275</PmxEditorDir>
     <PmxEditorDir Condition="'$(PmxEditorDir)' == ''">$(MSBuildProjectDirectory)\..\..\PmxEditor_0275</PmxEditorDir>
     <!--
