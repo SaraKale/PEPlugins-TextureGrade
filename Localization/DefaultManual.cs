@@ -13,10 +13,10 @@ namespace TextureGrade.Localization
         {
             switch (l)
             {
-                case Lang.ZhCn: return ZhCn();
-                case Lang.ZhTw: return ZhTw();
-                case Lang.Ja: return Ja();
-                default: return En();
+                case Lang.ZhCn: return ZhCn() + RecolorTexts.Manual(l);
+                case Lang.ZhTw: return ZhTw() + RecolorTexts.Manual(l);
+                case Lang.Ja: return Ja() + RecolorTexts.Manual(l);
+                default: return En() + RecolorTexts.Manual(l);
             }
         }
 
@@ -25,34 +25,43 @@ namespace TextureGrade.Localization
             .AppendLine("（本文件由插件自动生成，可随意编辑；改完在说明窗口点「重新载入」即可看到最新内容）")
             .AppendLine()
             .AppendLine("【左栏：贴图 + UV 预览】")
+            .AppendLine("· 预览下方工具按「视图 / 选择 / 顶点同步」分组，默认折叠成一行胶囊开关，点哪个展开哪个（状态记在插件目录 ui.json）。选面与平移是独立按钮，蓝色表示当前模式。大量顶点以合并标记显示，选择数据与发送顶点不减少。")
             .AppendLine("· 滚轮：以光标为中心缩放；右键拖动：任何模式下都可平移")
             .AppendLine("· 单击：点选单个 UV 三角面（Shift 加选 / Ctrl 减选 / 再点一次取消）")
             .AppendLine("· 双击：加选「整块连通 UV 岛」（类 Blender 按 L 的手感）；继续双击别的块可同时选多块，再双击一次取消该块（Ctrl+双击 = 强制取消）")
             .AppendLine("· 左键拖动：选面模式下 = 框选 UV 三角面；平移模式下 = 平移视图")
             .AppendLine("· 「选连通块」按钮：把当前选区补成完整的连通 UV 块（选区涉及到的每一块都会补全，且不会清掉已有选区）")
+<<<<<<< HEAD
             .AppendLine("· 编辑菜单「反选 UV 选区」(Ctrl+I)：没选中的变选中、已选中的取消 —— 想「除了这块以外全都要」时最省事；Ctrl+A = 全选 UV 三角面")
             .AppendLine("· 选中面的顶点会以红色标识显示；「接收选择顶点」读取 3D 视图选中顶点并标红，")
             .AppendLine("  「发送选择顶点」把标红顶点设为 3D 视图的选中顶点（与 PMXEditor 双向互通）")
+=======
+            .AppendLine("· 选中面的顶点会以红色标识显示；「从模型接收」读取 3D 视图选中顶点并标红，")
+            .AppendLine("  「发送到模型」把标红顶点设为 3D 视图的选中顶点（与 PMXEditor 双向互通）")
+>>>>>>> pr-1
             .AppendLine("· 「对比原图」按钮：切换显示原贴图 / 调色结果（参数不受影响）")
-            .AppendLine("· 直方图：RGB 叠加，实时反映当前预览（视图菜单可关闭）")
-            .AppendLine("· 选中后调色只作用于选区，选区外保持原贴图")
+            .AppendLine("· 预览下方「视图」组的「隐藏 UV / 显示 UV」切换线框和顶点标记，并与顶部菜单同步；选区及调色结果保留。")
+            .AppendLine("· 直方图：RGB 叠加，实时反映当前预览（默认关闭，视图菜单可开）")
+            .AppendLine("· 调色范围：默认「UV 选区优先」，有选区时仅改变选区内像素；没有选区时调整整张贴图。选择「整张贴图」后会适配显示全图，暂时忽略但保留 UV 选区，其他共用贴图的材质 UV 显示为灰线。")
+            .AppendLine("· 整图调色也会改变当前材质选中顶点对应区域以外的像素；左栏会提示共用贴图的材质数量。刷新模型或另存仍仅更新当前材质的贴图引用，不会自动替换其他材质的贴图。调色范围支持撤销、预设和分材质记忆。")
             .AppendLine()
             .AppendLine("【右栏：材质与调整】")
             .AppendLine("· 材质列表：贴图缩略图 + 序号·名称，「已修改」表示该材质已改过参数或已推送到模型")
             .AppendLine("· 预设 / 收藏：把调好的参数存成 JSON 预设，一键套用到其它材质（双击预设即应用）")
+<<<<<<< HEAD
             .AppendLine("· 预设管理：删除 / 改名 / 排序（排序按钮在「按名称 → 按时间 → 手动顺序」之间循环）；")
             .AppendLine("  「上移 / 下移」调顺序时会自动切到手动顺序，顺序存在 presets\\order.txt 里")
             .AppendLine("· 调整：折叠组（基本 / 色彩 / Lab 取色环 / HSL 分通道 / 曲线色阶RGB HSV / 细节 / 效果）")
+=======
+            .AppendLine("· 调整：折叠组（基本 / 色彩 / HSL 分通道 / 曲线色阶RGB HSV / 细节 / 效果）")
+>>>>>>> pr-1
             .AppendLine("· 每个材质的调色参数会分别记住，来回切材质不会丢")
             .AppendLine("· 每个材质的 UV 选区也会分别记住：A 材质做了局部调色后切走再切回来，选区还在，")
             .AppendLine("  不会退化成「整张贴图一起调」（模型被改过、面数变了时旧选区会自动作废）")
             .AppendLine()
-            .AppendLine("【Lab 取色环（亮度锁定）】")
-            .AppendLine("· 外环 = 色相、内圈 = 彩度；环上的颜色全部是同一个亮度 L*（等亮度色相环）")
-            .AppendLine("· 勾选「锁定亮度 L*」后，取任何颜色都只改色相/彩度，画面每个像素自身的亮度一动不动")
-            .AppendLine("· 取消勾选则连亮度一起朝目标色靠拢")
-            .AppendLine("· 「取画面亮度」把色环锚定到当前选区（无选区则整张图）的平均亮度 L*")
-            .AppendLine("· 「取画面色相」以画面原色为起点，再在环上微调；「强度」控制生效比例")
+            .AppendLine("【效果：黑白化与阈值】")
+            .AppendLine("· 阈值强度 0% 为关闭，100% 得到纯黑白块。黑白分界值可在 0–255 之间拖动或输入，默认 127.5；亮度低于分界变黑，达到分界变白。数值越大，黑色区域越多。")
+            .AppendLine("· 黑白化按加权亮度将颜色转为连续灰阶，滑块控制混合比例：0 保留原色，100 完全黑白化。浅灰横线下方为阈值强度和黑白分界值。")
             .AppendLine()
             .AppendLine("【文件菜单】")
             .AppendLine("· 导出 UV 布局图…：透明背景 + 线框的 PNG（尺寸同贴图，可直接叠在贴图上对齐）")
@@ -67,10 +76,19 @@ namespace TextureGrade.Localization
             .AppendLine()
             .AppendLine("【底部按钮】")
             .AppendLine("· 重新读取：重新从 PMX 读取材质与贴图")
+<<<<<<< HEAD
             .AppendLine("· 刷新模型：把当前调色结果写临时贴图并推送到 3D 视图（原图不动）。")
             .AppendLine("  临时贴图每次都用全新的文件名（避免 PMXEditor 按路径缓存导致画面不更新）；")
             .AppendLine("  若贴图所在目录不可写，会自动改写到系统临时目录，并在底部状态栏写出实际路径")
             .AppendLine("· 另存为新贴图：直接写 xxx_new.png 并让材质指向它（PNG 原尺寸，一键完成）")
+=======
+            .AppendLine("· 刷新模型：把当前调色结果写临时贴图并推送到 3D 视图（原图不动）")
+            .AppendLine("· 另存为新贴图：选择格式、尺寸与 JPEG 质量后保存并更新材质引用；文件菜单保留快速另存为 PNG。支持 PNG/JPEG/BMP/GIF/TIFF/TGA/DDS（Raw/DXT1/3/5）。")
+            .AppendLine("· 切换材质或重新读取会保留 UV 选区和接收顶点；几何/UV 改变时不恢复旧选区。左侧或编辑菜单可反选（Ctrl+I），Ctrl+A 全选，文本框除外。")
+            .AppendLine("· 预设支持改名、名称/时间/手动排序及上移/下移，顺序与排序方式会保存。")
+            .AppendLine("· 文件菜单可导出选区 Alpha PNG：RGB 选白色/原图/调色结果，Alpha 替换为选中 255、其余 0。整图调色时仍按显式 UV 选区导出，不修改原贴图或模型引用。")
+            .AppendLine("· 另存优先写入相对于当前 PMX 目录的贴图路径；未保存模型或跨盘时使用绝对路径。关闭插件会先恢复正式贴图引用，再清理临时预览，已另存的贴图保留。")
+>>>>>>> pr-1
             .AppendLine("· 还原 / 重置参数 / 撤销 / 重做")
             .AppendLine()
             .AppendLine("【非破坏式流程】")
@@ -95,29 +113,38 @@ namespace TextureGrade.Localization
             .AppendLine("· 雙擊：加選「整塊連通 UV 島」（類 Blender 按 L 的手感）；繼續雙擊別的塊可同時選多塊，再雙擊一次取消該塊（Ctrl+雙擊 = 強制取消）")
             .AppendLine("· 左鍵拖曳：選面模式下 = 框選 UV 三角面；平移模式下 = 平移檢視")
             .AppendLine("· 「選連通塊」按鈕：把目前選取補成完整的連通 UV 塊（選取涉及到的每一塊都會補全，且不會清掉已有選取）")
+<<<<<<< HEAD
             .AppendLine("· 編輯選單「反選 UV 選取」(Ctrl+I)：沒選中的變選取、已選取的取消 —— 想「除了這塊以外全都要」時最省事；Ctrl+A = 全選 UV 三角面")
             .AppendLine("· 選取面的頂點會以紅色標識顯示；「接收選取頂點」讀取 3D 視圖選取頂點並標紅，")
             .AppendLine("  「傳送選取頂點」把標紅頂點設為 3D 視圖的選取頂點（與 PMXEditor 雙向互通）")
+=======
+            .AppendLine("· 預覽下方工具依「檢視 / 選取 / 頂點同步」分組，預設折疊成一行膠囊開關，點哪個展開哪個（狀態記在外掛目錄 ui.json）。選面與平移為獨立按鈕，藍色表示目前模式。大量頂點以合併標記顯示，不減少選取資料或傳送頂點。")
+            .AppendLine("· 選取面的頂點會以紅色標識顯示；「從模型接收」讀取 3D 視圖選取頂點並標紅，")
+            .AppendLine("  「傳送到模型」把標紅頂點設為 3D 視圖的選取頂點（與 PMXEditor 雙向互通）")
+>>>>>>> pr-1
             .AppendLine("· 「對比原圖」按鈕：切換顯示原貼圖 / 調色結果（參數不受影響）")
-            .AppendLine("· 直方圖：RGB 疊加，即時反映目前預覽（檢視選單可關閉）")
-            .AppendLine("· 選取後調色只作用於選取範圍，選取外保持原貼圖")
+            .AppendLine("· 預覽下方「檢視」組的「隱藏 UV / 顯示 UV」切換線框和頂點標記，並與頂端選單同步；選取範圍及調色結果保留。")
+            .AppendLine("· 直方圖：RGB 疊加，即時反映目前預覽（預設關閉，檢視選單可開）")
+            .AppendLine("· 調色範圍：預設「UV 選區優先」，有選區時僅改變選區內像素；沒有選區時調整整張貼圖。選擇「整張貼圖」後會適配顯示全圖，暫時忽略但保留 UV 選區，其他共用貼圖的材質 UV 顯示為灰線。")
+            .AppendLine("· 整圖調色也會改變目前材質所選頂點對應區域以外的像素；左欄會提示共用貼圖的材質數量。刷新模型或另存仍僅更新目前材質的貼圖參照，不會自動替換其他材質的貼圖。調色範圍支援復原、預設集和分材質記憶。")
             .AppendLine()
             .AppendLine("【右欄：材質與調整】")
             .AppendLine("· 材質清單：貼圖縮圖 + 序號·名稱，「已修改」表示該材質已改過參數或已推送到模型")
             .AppendLine("· 預設 / 收藏：把調好的參數存成 JSON 預設，一鍵套用到其它材質（雙擊預設即套用）")
+<<<<<<< HEAD
             .AppendLine("· 預設管理：刪除 / 改名 / 排序（排序按鈕在「按名稱 → 按時間 → 手動順序」之間循環）；")
             .AppendLine("  「上移 / 下移」調順序時會自動切到手動順序，順序存在 presets\\order.txt 裡")
             .AppendLine("· 調整：摺疊組（基本 / 色彩 / Lab 取色環 / HSL 分通道 / 曲線色階RGB HSV / 細節 / 效果）")
+=======
+            .AppendLine("· 調整：摺疊組（基本 / 色彩 / HSL 分通道 / 曲線色階RGB HSV / 細節 / 效果）")
+>>>>>>> pr-1
             .AppendLine("· 每個材質的調色參數會分別記住，來回切材質不會遺失")
             .AppendLine("· 每個材質的 UV 選取範圍也會分別記住：A 材質做局部調色後切走再切回來，選取還在，")
             .AppendLine("  不會退化成「整張貼圖一起調」（模型被改過、面數變了時舊選取會自動作廢）")
             .AppendLine()
-            .AppendLine("【Lab 取色環（亮度鎖定）】")
-            .AppendLine("· 外環 = 色相、內圈 = 彩度；環上的顏色全部是同一個亮度 L*（等亮度色相環）")
-            .AppendLine("· 勾選「鎖定亮度 L*」後，取任何顏色都只改色相/彩度，畫面每個像素自身的亮度一動不動")
-            .AppendLine("· 取消勾選則連亮度一起朝目標色靠攏")
-            .AppendLine("· 「取畫面亮度」把色環錨定到目前選取（無選取則整張圖）的平均亮度 L*")
-            .AppendLine("· 「取畫面色相」以畫面原色為起點，再在環上微調；「強度」控制生效比例")
+            .AppendLine("【效果：黑白化與閾值】")
+            .AppendLine("· 閾值強度 0% 為關閉，100% 得到純黑白塊。黑白分界值可在 0–255 之間拖曳或輸入，預設 127.5；亮度低於分界變黑，達到分界變白。數值越大，黑色區域越多。")
+            .AppendLine("· 黑白化依加權亮度將色彩轉為連續灰階，滑桿控制混合比例：0 保留原色，100 完全黑白化。淺灰橫線下方為閾值強度和黑白分界值。")
             .AppendLine()
             .AppendLine("【檔案選單】")
             .AppendLine("· 匯出 UV 佈局圖…：透明背景 + 線框的 PNG（尺寸同貼圖，可直接疊在貼圖上對齊）")
@@ -132,10 +159,19 @@ namespace TextureGrade.Localization
             .AppendLine()
             .AppendLine("【底部按鈕】")
             .AppendLine("· 重新讀取：重新從 PMX 讀取材質與貼圖")
+<<<<<<< HEAD
             .AppendLine("· 刷新模型：把目前調色結果寫暫存貼圖並推送到 3D 檢視（原圖不動）。")
             .AppendLine("  暫存貼圖每次都用全新檔名（避免 PMXEditor 依路徑快取導致畫面不更新）；")
             .AppendLine("  若貼圖所在目錄不可寫，會自動改寫到系統暫存目錄，並在底部狀態列顯示實際路徑")
             .AppendLine("· 另存為新貼圖：直接寫 xxx_new.png 並讓材質指向它（PNG 原尺寸，一鍵完成）")
+=======
+            .AppendLine("· 刷新模型：把目前調色結果寫暫存貼圖並推送到 3D 檢視（原圖不動）")
+            .AppendLine("· 另存為新貼圖：選擇格式、尺寸與 JPEG 品質後儲存並更新材質參照；檔案選單保留快速 PNG 儲存。支援 PNG/JPEG/BMP/GIF/TIFF/TGA/DDS（Raw/DXT1/3/5）。")
+            .AppendLine("· 切換材質或重新讀取會保留 UV 選區和接收頂點；幾何/UV 改變時不恢復舊選區。左側或編輯選單可反選（Ctrl+I），Ctrl+A 全選，文字框除外。")
+            .AppendLine("· 預設集支援改名、名稱/時間/手動排序及上移/下移，順序與排序方式會儲存。")
+            .AppendLine("· 檔案選單可匯出選區 Alpha PNG：RGB 選白色/原圖/調色結果，Alpha 取代為選取 255、其餘 0。整圖調色時仍依明確 UV 選區匯出，不修改原貼圖或模型參照。")
+            .AppendLine("· 另存優先寫入相對於目前 PMX 目錄的貼圖路徑；未儲存模型或跨磁碟時使用絕對路徑。關閉外掛會先恢復正式貼圖參照，再清理暫存預覽，已另存的貼圖保留。")
+>>>>>>> pr-1
             .AppendLine("· 還原 / 重設參數 / 復原 / 重做")
             .AppendLine()
             .AppendLine("【非破壞式流程】")
@@ -160,30 +196,39 @@ namespace TextureGrade.Localization
             .AppendLine("- Double-click: add the whole connected UV island (like pressing L in Blender). Keep double-clicking other islands to select several at once; double-click one again (or Ctrl+double-click) to remove it.")
             .AppendLine("- Left-drag: box-select UV faces in Select mode, or pan the view in Pan mode.")
             .AppendLine("- \"Select Island\" button: grow the current selection into complete connected islands — every island the selection touches is completed, and the existing selection is kept.")
+<<<<<<< HEAD
             .AppendLine("- Edit menu > \"Invert UV Selection\" (Ctrl+I): unselected faces become selected and vice versa — the quickest way to grade \"everything except this one island\". Ctrl+A selects all UV triangles.")
             .AppendLine("- Vertices of selected faces are shown as red marks; \"Recv Vertices\" reads the 3D view's selected vertices and marks them red,")
             .AppendLine("  \"Send Vertices\" pushes the red-marked vertices back to the 3D view as its selection (two-way with PMXEditor).")
+=======
+            .AppendLine("- Tools under the preview are grouped as View / Selection / Vertices and fold into one row of chips; click a chip to expand that group (all collapsed by default, state saved in ui.json next to the plug-in). Select and Pan have separate buttons; blue indicates the active mode. Dense display marks are combined without reducing selected or sent vertices.")
+            .AppendLine("- Vertices of selected faces are shown as red marks; \"From Model\" reads the 3D view's selected vertices and marks them red,")
+            .AppendLine("  \"To Model\" pushes the red-marked vertices back to the 3D view as its selection (two-way with PMXEditor).")
+>>>>>>> pr-1
             .AppendLine("- \"Compare Original\" button: toggle between the original texture and the graded result (parameters are kept).")
-            .AppendLine("- Histogram: overlaid RGB, updated live (can be hidden from the View menu).")
-            .AppendLine("- Grading only affects the selection; everything outside keeps the original pixels.")
+            .AppendLine("- Hide UV / Show UV in the View group under the preview toggles wireframes and vertex markers, synchronized with the top menu. Selection and graded pixels are preserved.")
+            .AppendLine("- Histogram: overlaid RGB, updated live (hidden by default; toggle from the View menu).")
+            .AppendLine("- Grading scope defaults to UV selection first: only selected pixels change when a selection exists; otherwise the whole texture changes. Whole texture fits the image in view and temporarily ignores, but retains, the selection. Gray UV lines show other materials using the same texture.")
+            .AppendLine("- Whole-texture grading changes pixels outside the current material's selected vertices as well. The left panel shows how many materials share the texture. Refresh and Save as New still update only the current material's texture reference. Scope is included in undo, presets and per-material settings.")
             .AppendLine()
             .AppendLine("[Right panel: materials and adjustments]")
             .AppendLine("- Material list: texture thumbnail + index - name. \"Modified\" means parameters changed or pushed to the model.")
             .AppendLine("- Presets / Favorites: save the current parameters as a JSON preset and apply it elsewhere (double-click to apply).")
+<<<<<<< HEAD
             .AppendLine("- Preset management: delete / rename / sort. The sort button cycles by name -> by time -> manual order.")
             .AppendLine("  Move Up / Move Down switches to manual order automatically; the order is stored in presets\\order.txt.")
             .AppendLine("- Adjust: collapsible groups (Basic / Color / Lab wheel / HSL per channel / Curves,Levels,RGB,HSV / Detail / Effects).")
+=======
+            .AppendLine("- Adjust: collapsible groups (Basic / Color / HSL per channel / Curves,Levels,RGB,HSV / Detail / Effects).")
+>>>>>>> pr-1
             .AppendLine("- Parameters are remembered per material, so switching back and forth loses nothing.")
             .AppendLine("- The UV selection is remembered per material too: grade a region on material A, switch away and back,")
             .AppendLine("  and the selection is still there — it never silently degrades into whole-texture grading.")
             .AppendLine("  (If the model is edited and the face count changes, the saved selection is discarded as stale.)")
             .AppendLine()
-            .AppendLine("[Lab color wheel (lightness locked)]")
-            .AppendLine("- Outer ring = hue, inner disc = chroma. Every color on the ring sits at the same lightness L*.")
-            .AppendLine("- With \"Lock lightness L*\" checked, any color you pick only changes hue/chroma; each pixel keeps its own L*.")
-            .AppendLine("- Uncheck it to let lightness move toward the target color as well.")
-            .AppendLine("- \"Pick Image Lightness\" anchors the wheel to the average L* of the selection (or the whole image).")
-            .AppendLine("- \"Pick Image Hue\" starts from the image's own color; \"Amount\" controls how strongly it applies.")
+            .AppendLine("[Effects: grayscale and threshold]")
+            .AppendLine("- Threshold mix: 0% disables the effect; 100% creates solid black/white regions. Drag or type a level from 0–255 (default 127.5): brightness below it becomes black, at or above it becomes white. Higher values expand black regions.")
+            .AppendLine("- Grayscale blends colors toward weighted brightness while preserving continuous gray tones: 0 keeps the original colors, 100 is fully grayscale. The threshold mix and level sit below the light gray divider.")
             .AppendLine()
             .AppendLine("[File menu]")
             .AppendLine("- Export UV Layout…: transparent PNG with wireframe, same size as the texture, so it aligns over it.")
@@ -199,9 +244,17 @@ namespace TextureGrade.Localization
             .AppendLine("[Bottom buttons]")
             .AppendLine("- Re-read: reload materials and textures from the PMX.")
             .AppendLine("- Refresh Model: write the graded result to a temp texture and push it to the 3D view (original untouched).")
+<<<<<<< HEAD
             .AppendLine("  Every push writes a brand-new temp file name — PMXEditor appears to cache textures by path, so reusing a path can look like \"nothing happened\".")
             .AppendLine("  If the texture folder is not writable, the preview falls back to the system temp folder and the status bar shows the real path.")
             .AppendLine("- Save as New Texture: one click — write xxx_new.png (PNG, original size) and point the material at it.")
+=======
+            .AppendLine("- Save as New Texture: choose format, size and JPEG quality, then save and update the material reference. File also offers quick PNG saving. Formats: PNG/JPEG/BMP/GIF/TIFF/TGA/DDS (Raw/DXT1/3/5).")
+            .AppendLine("- Material switching/re-reading retains UV selection and received vertices unless geometry/UVs changed. Invert from the left toolbar or Edit menu (Ctrl+I); Ctrl+A selects all. Text boxes keep their shortcuts.")
+            .AppendLine("- Presets support rename, name/time/custom sorting and Move Up/Down; order and sort mode persist.")
+            .AppendLine("- File can export selection-alpha PNG: RGB contains white/original/graded pixels; alpha is replaced with selected=255, other=0. This uses the explicit UV selection even during whole-texture grading, without changing the source texture or model reference.")
+            .AppendLine("- Saved textures use a path relative to the current PMX folder where possible; unsaved models or different drives use absolute paths. Closing the plug-in restores the permanent texture reference before deleting temporary previews. Saved textures are kept.")
+>>>>>>> pr-1
             .AppendLine("- Revert / Reset Parameters / Undo / Redo.")
             .AppendLine()
             .AppendLine("[Non-destructive workflow]")
@@ -226,29 +279,38 @@ namespace TextureGrade.Localization
             .AppendLine("· ダブルクリック：連結した UV アイランドをまとめて追加選択（Blender の L キー相当）。続けて別のアイランドをダブルクリックすれば複数同時選択、もう一度ダブルクリック（または Ctrl+ダブルクリック）で解除")
             .AppendLine("· 左ドラッグ：選択モードでは矩形選択、平移モードでは表示を移動")
             .AppendLine("· 「アイランド選択」ボタン：現在の選択を完全な連結アイランドに拡張（選択が触れているすべてのアイランドを補完し、既存の選択は消しません）")
+<<<<<<< HEAD
             .AppendLine("· 編集メニュー「UV 選択を反転」(Ctrl+I)：未選択の面が選択され、選択済みの面が解除されます —— 「このアイランド以外すべて」を調整したい時に最短。Ctrl+A = 全 UV 三角面を選択")
             .AppendLine("· 選択面の頂点は赤く表示されます。「選択頂点を受信」で3Dビューの選択頂点を読み込んで赤表示、")
             .AppendLine("  「選択頂点を送信」で赤表示中の頂点を3Dビューの選択として送信（PMXエディタと双方向）")
+=======
+            .AppendLine("· プレビュー下のツールは表示 / 選択 / 頂点同期に分類され、既定では 1 行のチップに折りたたまれています（クリックした組だけ展開、状態は ui.json に保存）。選択と平移は独立したボタンで、青色が現在のモードです。密集した表示マークは統合しますが、選択や送信する頂点は減らしません。")
+            .AppendLine("· 選択面の頂点は赤く表示されます。「モデルから受信」で3Dビューの選択頂点を読み込んで赤表示、")
+            .AppendLine("  「モデルへ送信」で赤表示中の頂点を3Dビューの選択として送信（PMXエディタと双方向）")
+>>>>>>> pr-1
             .AppendLine("· 「元画像比較」ボタン：元テクスチャと調整結果を切り替え（パラメータは保持）")
-            .AppendLine("· ヒストグラム：RGB 重ね合わせ、リアルタイム更新（表示メニューで非表示可）")
-            .AppendLine("· 選択範囲がある場合、調色は選択範囲のみに適用され、それ以外は元のまま")
+            .AppendLine("· プレビュー下の表示グループの「UV を隠す / UV を表示」で線と頂点マーカーを切り替え、上部メニューと同期します。選択範囲と調色結果は保持されます。")
+            .AppendLine("· ヒストグラム：RGB 重ね合わせ、リアルタイム更新（既定では非表示、表示メニューで切替）")
+            .AppendLine("· 調色範囲の既定は UV 選択優先です。選択があればその範囲のみ、なければ画像全体を調整します。「テクスチャ全体」では全体を表示し、選択を保持したまま一時的に無視します。同じ画像を使用する他材質の UV は灰色で表示します。")
+            .AppendLine("· 全体の調色は現在の材質の選択頂点に対応する領域外の画素も変更します。左パネルに画像を共有する材質数を表示します。更新と新規保存で参照先が変わるのは現在の材質だけです。範囲は取り消し、プリセット、材質ごとの設定に保存されます。")
             .AppendLine()
             .AppendLine("【右パネル：材質と調整】")
             .AppendLine("· 材質一覧：サムネイル + 番号·名称。「変更済み」は調整済みまたはモデルへ反映済み")
             .AppendLine("· プリセット / お気に入り：調整値を JSON で保存し、他材質へワンクリック適用（ダブルクリックで適用）")
+<<<<<<< HEAD
             .AppendLine("· プリセット管理：削除 / 名前変更 / 並び替え（並び替えボタンは「名前順 → 更新順 → 手動」を巡回）。")
             .AppendLine("  「上へ / 下へ」で順番を変えると自動的に手動順序へ切り替わり、presets\\order.txt に保存されます")
             .AppendLine("· 調整：折りたたみグループ（基本 / カラー / Lab ホイール / HSL / カーブ·レベル·RGB·HSV / ディテール / エフェクト）")
+=======
+            .AppendLine("· 調整：折りたたみグループ（基本 / カラー / HSL / カーブ·レベル·RGB·HSV / ディテール / エフェクト）")
+>>>>>>> pr-1
             .AppendLine("· パラメータは材質ごとに記憶され、切り替えても失われません")
             .AppendLine("· UV の選択範囲も材質ごとに記憶されます。A 材質で部分調整してから別の材質へ切り替え、戻っても選択は残り、")
             .AppendLine("  「テクスチャ全体への調整」に勝手に変わることはありません（モデルが編集され面数が変わった場合は破棄されます）")
             .AppendLine()
-            .AppendLine("【Lab カラーホイール（明度ロック）】")
-            .AppendLine("· 外環 = 色相、内円 = 彩度。環上の色はすべて同じ明度 L*（等明度色相環）")
-            .AppendLine("· 「明度 L* をロック」をオンにすると、色相/彩度のみ変化し各ピクセルの明度は不変")
-            .AppendLine("· オフにすると明るさも目標色に近づきます")
-            .AppendLine("· 「画像の明度を取得」は選択範囲（無ければ全体）の平均 L* にホイールを固定")
-            .AppendLine("· 「画像の色相を取得」は画像の色を起点に微調整、「強度」で適用割合を指定")
+            .AppendLine("【エフェクト：白黒化と2 値化】")
+            .AppendLine("· 2 値化の強度は 0% で無効、100% で白黒の領域になります。境界値は 0–255（既定 127.5）を入力またはドラッグで指定します。境界未満は黒、以上は白になり、大きくすると黒い領域が増えます。")
+            .AppendLine("· 白黒化は色を加重した明るさに変換し、連続した階調を保ちます。0 は元の色、100 は完全な白黒です。薄いグレーの区切り線の下に2 値化の強度と境界値を配置しています。")
             .AppendLine()
             .AppendLine("【ファイルメニュー】")
             .AppendLine("· UV レイアウトを書き出し…：透明背景 + ワイヤーフレームの PNG（テクスチャと同サイズで重ねられます）")
@@ -263,11 +325,20 @@ namespace TextureGrade.Localization
             .AppendLine()
             .AppendLine("【下部ボタン】")
             .AppendLine("· 再読み込み：PMX から材質とテクスチャを再取得")
+<<<<<<< HEAD
             .AppendLine("· モデルを更新：調整結果を一時テクスチャに書き出し 3D ビューへ反映（元画像は不変）。")
             .AppendLine("  一時ファイルは毎回まったく新しい名前で書き出します（PMXエディタはパスでテクスチャをキャッシュするらしく、")
             .AppendLine("  同じパスを使い回すと「押しても何も起きない」ように見えるため）。")
             .AppendLine("  テクスチャのフォルダに書き込めない場合はシステムの一時フォルダへ退避し、ステータスバーに実際のパスを表示します")
             .AppendLine("· 新規テクスチャに保存：xxx_new.png（PNG・元サイズ）を書き出し、材質の参照先を変更 —— ワンクリックで完了")
+=======
+            .AppendLine("· モデルを更新：調整結果を一時テクスチャに書き出し 3D ビューへ反映（元画像は不変）")
+            .AppendLine("· 新規保存：形式、サイズ、JPEG 品質を選択して材質の参照先を更新します。ファイルメニューにはクイック PNG 保存もあります。形式：PNG/JPEG/BMP/GIF/TIFF/TGA/DDS（Raw/DXT1/3/5）。")
+            .AppendLine("· 材質切替・再読込は UV 選択と受信頂点を保持します。形状/UV 変更時は旧選択を破棄します。左ツール・編集メニューで反転（Ctrl+I）、Ctrl+A で全選択。文字入力時は除きます。")
+            .AppendLine("· プリセットは名前変更、名前/更新日時/手動順と上下移動に対応し、順序と並び替え方法を保存します。")
+            .AppendLine("· 選択 Alpha PNG を出力できます。RGB は白/元画像/調整結果、Alpha は選択=255・その他=0 に置換します。画像全体モードでも明示的な UV 選択を使用し、元画像やモデル参照は変更しません。")
+            .AppendLine("· 保存時は現在の PMX フォルダーからの相対パスを優先します。モデルが未保存、または別ドライブの場合は絶対パスです。終了時は保存済みの参照先を復元してから一時プレビューを削除し、保存したテクスチャは残します。")
+>>>>>>> pr-1
             .AppendLine("· 元に戻す / パラメータリセット / 取り消し / やり直し")
             .AppendLine()
             .AppendLine("【非破壊ワークフロー】")

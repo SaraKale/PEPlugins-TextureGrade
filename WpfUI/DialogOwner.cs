@@ -22,8 +22,16 @@ namespace TextureGrade.WpfUI
             try
             {
                 var w = element == null ? null : System.Windows.Window.GetWindow(element);
+<<<<<<< HEAD
                 if (w == null) return null;
                 var h = new System.Windows.Interop.WindowInteropHelper(w).Handle;
+=======
+                var source = System.Windows.PresentationSource.FromVisual(element) as System.Windows.Interop.HwndSource;
+                var h = w != null ? new System.Windows.Interop.WindowInteropHelper(w).Handle : source?.Handle ?? IntPtr.Zero;
+                // ElementHost has an HWND but no parent WPF Window.
+                var form = h == IntPtr.Zero ? null : System.Windows.Forms.Control.FromChildHandle(h)?.FindForm();
+                if (form != null) return form;
+>>>>>>> pr-1
                 return h == IntPtr.Zero ? null : new Win32Owner(h);
             }
             catch

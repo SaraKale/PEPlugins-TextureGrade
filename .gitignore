@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+*.user
+tests/**/bin/
+tests/**/obj/
+artifacts/
+# Local research reference originals are kept on disk, not published with the plugin.
+ref/

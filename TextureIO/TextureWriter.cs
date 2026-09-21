@@ -34,6 +34,10 @@ namespace TextureGrade.TextureIO
     /// </summary>
     public static class TextureWriter
     {
+<<<<<<< HEAD
+=======
+        public const long MaxPixels = 64L * 1024 * 1024;
+>>>>>>> pr-1
         public static string Extension(TextureFormat f)
         {
             switch (f)
@@ -79,6 +83,31 @@ namespace TextureGrade.TextureIO
         public static void Save(string path, byte[] rgba, int width, int height,
                                 TextureFormat format, int jpegQuality = 92)
         {
+<<<<<<< HEAD
+=======
+            Validate(rgba, width, height);
+            if (!Enum.IsDefined(typeof(TextureFormat), format)) throw new ArgumentOutOfRangeException(nameof(format));
+            string destination = Path.GetFullPath(path);
+            string temporary = Path.Combine(Path.GetDirectoryName(destination), ".texturegrade-" + Guid.NewGuid().ToString("N") + ".tmp");
+            try
+            {
+                SaveCore(temporary, rgba, width, height, format, jpegQuality);
+                if (File.Exists(destination)) File.Replace(temporary, destination, null);
+                else File.Move(temporary, destination);
+            }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
+        }
+
+        private static void Validate(byte[] rgba, int width, int height)
+        {
+            if (rgba == null) throw new ArgumentNullException(nameof(rgba));
+            long pixels = (long)width * height;
+            if (width <= 0 || height <= 0 || pixels > MaxPixels) throw new ArgumentOutOfRangeException(nameof(width));
+            if (rgba.LongLength < pixels * 4) throw new ArgumentException("RGBA buffer too small.", nameof(rgba));
+        }
+        private static void SaveCore(string path, byte[] rgba, int width, int height, TextureFormat format, int jpegQuality)
+        {
+>>>>>>> pr-1
             if (rgba == null) throw new ArgumentNullException("rgba");
             if (width <= 0 || height <= 0) throw new ArgumentException("bad size");
             if (rgba.Length < width * height * 4) throw new ArgumentException("buffer too small");
@@ -144,10 +173,17 @@ namespace TextureGrade.TextureIO
                 switch (format)
                 {
                     case TextureFormat.Jpg:
+<<<<<<< HEAD
                         bmp.Save(path, FindCodec("image/jpeg"), QualityParams(jpegQuality));
                         break;
                     case TextureFormat.Tiff:
                         bmp.Save(path, FindCodec("image/tiff"), CompressionParams());
+=======
+                        using (var parameters = QualityParams(jpegQuality)) bmp.Save(path, FindCodec("image/jpeg"), parameters);
+                        break;
+                    case TextureFormat.Tiff:
+                        using (var parameters = CompressionParams()) bmp.Save(path, FindCodec("image/tiff"), parameters);
+>>>>>>> pr-1
                         break;
                     case TextureFormat.Bmp:
                         bmp.Save(path, ImageFormat.Bmp);
@@ -382,7 +418,11 @@ namespace TextureGrade.TextureIO
                         // 显式 alpha：每像素 4bit，两个像素挤一个字节
                         for (int k = 0; k < 16; k++)
                         {
+<<<<<<< HEAD
                             byte av = (byte)(pa[k] / 17);
+=======
+                            byte av = (byte)((pa[k] + 8) / 17);
+>>>>>>> pr-1
                             if ((k & 1) == 0) block[k / 2] = av;
                             else block[k / 2] |= (byte)(av << 4);
                         }
@@ -559,6 +599,11 @@ namespace TextureGrade.TextureIO
         /// </summary>
         public static byte[] Resample(byte[] rgba, int width, int height, int newW, int newH)
         {
+<<<<<<< HEAD
+=======
+            Validate(rgba, width, height);
+            if (newW <= 0 || newH <= 0 || (long)newW * newH > MaxPixels) throw new ArgumentOutOfRangeException(nameof(newW));
+>>>>>>> pr-1
             if (newW == width && newH == height) return rgba;
             if (rgba == null || width <= 0 || height <= 0 || newW <= 0 || newH <= 0) return rgba;
 
@@ -566,7 +611,11 @@ namespace TextureGrade.TextureIO
             int sw = width, sh = height;
 
             // 缩小超过 2 倍时，先按整数倍盒式降采样到 2 倍以内
+<<<<<<< HEAD
             while (sw / 2 >= newW && sh / 2 >= newH && sw > 2 && sh > 2)
+=======
+            while (sw / 2 >= newW && sh / 2 >= newH && sw > 2 && sh > 2 && sw % 2 == 0 && sh % 2 == 0)
+>>>>>>> pr-1
             {
                 src = BoxHalf(src, sw, sh);
                 sw /= 2; sh /= 2;
@@ -593,6 +642,7 @@ namespace TextureGrade.TextureIO
                     int p00 = (y0 * sw + x0) * 4, p01 = (y0 * sw + x1) * 4;
                     int p10 = (y1 * sw + x0) * 4, p11 = (y1 * sw + x1) * 4;
 
+<<<<<<< HEAD
                     for (int c = 0; c < 4; c++)
                     {
                         double top = src[p00 + c] * (1 - wx) + src[p01 + c] * wx;
@@ -600,6 +650,9 @@ namespace TextureGrade.TextureIO
                         double v = top * (1 - wy) + bot * wy;
                         dst[d + c] = v < 0 ? (byte)0 : v > 255 ? (byte)255 : (byte)(v + 0.5);
                     }
+=======
+                    FilterFour(src, p00, p01, p10, p11, (1 - wx) * (1 - wy), wx * (1 - wy), (1 - wx) * wy, wx * wy, dst, d);
+>>>>>>> pr-1
                 }
             }
             return dst;
@@ -614,6 +667,7 @@ namespace TextureGrade.TextureIO
                 for (int x = 0; x < nw; x++)
                 {
                     int d = (y * nw + x) * 4;
+<<<<<<< HEAD
                     for (int c = 0; c < 4; c++)
                     {
                         int sum = src[((y * 2) * w + x * 2) * 4 + c]
@@ -622,9 +676,29 @@ namespace TextureGrade.TextureIO
                                 + src[((y * 2 + 1) * w + x * 2 + 1) * 4 + c];
                         dst[d + c] = (byte)((sum + 2) / 4);
                     }
+=======
+                    int p = ((y * 2) * w + x * 2) * 4;
+                    FilterFour(src, p, p + 4, p + w * 4, p + w * 4 + 4, .25, .25, .25, .25, dst, d);
+>>>>>>> pr-1
                 }
             }
             return dst;
         }
+<<<<<<< HEAD
+=======
+        private static void FilterFour(byte[] src, int p0, int p1, int p2, int p3,
+            double w0, double w1, double w2, double w3, byte[] dst, int offset)
+        {
+            double a0 = src[p0 + 3] * w0, a1 = src[p1 + 3] * w1, a2 = src[p2 + 3] * w2, a3 = src[p3 + 3] * w3;
+            double alpha = a0 + a1 + a2 + a3;
+            dst[offset + 3] = (byte)Math.Max(0, Math.Min(255, alpha + .5));
+            for (int c = 0; c < 3; c++)
+            {
+                double value = alpha > 1e-9 ? (src[p0 + c] * a0 + src[p1 + c] * a1 + src[p2 + c] * a2 + src[p3 + c] * a3) / alpha :
+                    src[p0 + c] * w0 + src[p1 + c] * w1 + src[p2 + c] * w2 + src[p3 + c] * w3;
+                dst[offset + c] = (byte)Math.Max(0, Math.Min(255, value + .5));
+            }
+        }
+>>>>>>> pr-1
     }
 }

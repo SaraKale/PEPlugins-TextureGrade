@@ -10,7 +10,11 @@ namespace TextureGrade.WpfUI
     /// <summary>
     /// 「另存为新贴图（选格式/尺寸）…」对话框。
     ///
+<<<<<<< HEAD
     /// 默认的工具栏「另存」按钮仍然是无脑存 PNG 原尺寸；这里给需要的人提供：
+=======
+    /// 工具栏「另存」打开此窗口；文件菜单另提供原尺寸快速 PNG 保存：
+>>>>>>> pr-1
     ///   - 封装格式：PNG / JPG / BMP / GIF / TIFF / TGA / DDS（未压缩 · DXT1/3/5）
     ///   - 输出尺寸：原尺寸 / 1/2 / 1/4 / 自定义宽高
     ///   - JPG 质量
@@ -41,11 +45,19 @@ namespace TextureGrade.WpfUI
             _srcW = srcWidth; _srcH = srcHeight;
 
             Text = L.T("SaveDlg.Title");
+<<<<<<< HEAD
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false; MinimizeBox = false;
             ShowInTaskbar = false;
             Size = new Size(560, 330);
+=======
+            StartPosition = FormStartPosition.CenterParent;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false; MinimizeBox = false;
+            ShowInTaskbar = false;
+            ClientSize = new Size(560, 360);
+>>>>>>> pr-1
             BackColor = Color.White;
             Font = new Font("Microsoft YaHei UI", 10f);
 
@@ -123,6 +135,10 @@ namespace TextureGrade.WpfUI
             AcceptButton = _btnOk;
 
             OnFormatChanged();
+<<<<<<< HEAD
+=======
+            OnSizeModeChanged();
+>>>>>>> pr-1
         }
 
         private Label NewLabel(string text, int left, int top, int width = 90)
@@ -152,6 +168,10 @@ namespace TextureGrade.WpfUI
             {
                 dlg.Title = L.T("SaveDlg.Title");
                 dlg.Filter = L.T("SaveDlg.FilterAll");
+<<<<<<< HEAD
+=======
+                dlg.OverwritePrompt = false; // Confirm the final, format-normalized filename in OnOk.
+>>>>>>> pr-1
                 dlg.FileName = Path.GetFileName(_txtPath.Text);
                 try { dlg.InitialDirectory = Path.GetDirectoryName(_txtPath.Text) ?? ""; }
                 catch { /* 路径非法就用默认目录 */ }
@@ -187,7 +207,12 @@ namespace TextureGrade.WpfUI
             _lblQuality.Enabled = f == TextureFormat.Jpg;
 
             string notes = "";
+<<<<<<< HEAD
             if (!TextureWriter.KeepsAlpha(f)) notes += L.T("SaveDlg.NoAlpha") + "  ";
+=======
+            if (f == TextureFormat.DdsDxt1) notes += L.T("SaveDlg.BinaryAlpha") + "  ";
+            else if (!TextureWriter.KeepsAlpha(f)) notes += L.T("SaveDlg.NoAlpha") + "  ";
+>>>>>>> pr-1
             if (TextureWriter.IsLossy(f)) notes += L.T("SaveDlg.Lossy") + "  ";
             if (f == TextureFormat.DdsRaw || f == TextureFormat.DdsDxt1 ||
                 f == TextureFormat.DdsDxt3 || f == TextureFormat.DdsDxt5)
@@ -232,7 +257,11 @@ namespace TextureGrade.WpfUI
             UpdateInfo();
         }
 
+<<<<<<< HEAD
         /// <summary>用户手改宽高 -> 自动切到「自定义」，并等比联动另一边（没按 Ctrl 时）。</summary>
+=======
+        /// <summary>用户手改宽高时切到「自定义」，两边可独立设置。</summary>
+>>>>>>> pr-1
         private void OnCustomSizeTyped()
         {
             UpdateInfo();
@@ -254,6 +283,10 @@ namespace TextureGrade.WpfUI
 
         private void OnOk()
         {
+<<<<<<< HEAD
+=======
+            ApplyExt(((FormatItem)_cboFormat.SelectedItem).Value);
+>>>>>>> pr-1
             string p = (_txtPath.Text ?? "").Trim();
             if (string.IsNullOrEmpty(p))
             {
@@ -265,7 +298,16 @@ namespace TextureGrade.WpfUI
             TargetWidth = (int)_numW.Value;
             TargetHeight = (int)_numH.Value;
             JpegQuality = (int)_numQuality.Value;
+<<<<<<< HEAD
             TargetPath = p;
+=======
+            try { TargetPath = Path.GetFullPath(p); }
+            catch { MessageBox.Show(this, L.T("SaveDlg.NeedPath"), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if ((long)TargetWidth * TargetHeight > TextureWriter.MaxPixels)
+            { MessageBox.Show(this, L.T("SaveDlg.TooLarge"), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (File.Exists(TargetPath) && MessageBox.Show(this, L.F("SaveDlg.Overwrite", TargetPath), Text,
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+>>>>>>> pr-1
 
             DialogResult = DialogResult.OK;
             Close();

@@ -13,7 +13,9 @@
     <LangVersion>latest</LangVersion>
     <AssemblyTitle>Texture Grade</AssemblyTitle>
     <Description>PMXEditor TextureGrade Plugins</Description>
-    <FileVersion>1.0.1.0</FileVersion>
+    <FileVersion>1.0.3.0</FileVersion>
+    <PmxEditorDir Condition="'$(PmxEditorDir)' == '' And Exists('..\PmxEditor_0275\Lib\PEPlugin\PEPlugin.dll')">$(MSBuildProjectDirectory)\..\PmxEditor_0275</PmxEditorDir>
+    <PmxEditorDir Condition="'$(PmxEditorDir)' == ''">$(MSBuildProjectDirectory)\..\..\PmxEditor_0275</PmxEditorDir>
     <!--
       ⚠️ 不要在这里写 <AssemblyVersion>！
       WPF 的 MarkupCompilePass1 在 GenerateAssemblyInfo 之前跑，它会把「显式声明的 $(AssemblyVersion)」
@@ -28,6 +30,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="tests\**;artifacts\**" />
+    <Page Remove="tests\**;artifacts\**" />
     <Compile Remove="image\**" />
     <Compile Remove="图片介绍\**" />
     <EmbeddedResource Remove="image\**" />
@@ -63,19 +67,19 @@
       例如: C:\Program Files (x86)\PMXEditor\PEPlugin.dll
     -->
     <Reference Include="PEPlugin">
-      <HintPath>..\..\PmxEditor_0275\Lib\PEPlugin\PEPlugin.dll</HintPath>
+      <HintPath>$(PmxEditorDir)\Lib\PEPlugin\PEPlugin.dll</HintPath>
     </Reference>
     <Reference Include="PmxEditorCore">
-      <HintPath>..\..\PmxEditor_0275\Lib\System\PmxEditorCore.dll</HintPath>
+      <HintPath>$(PmxEditorDir)\Lib\System\PmxEditorCore.dll</HintPath>
     </Reference>
     <Reference Include="PmxEditorLib">
-      <HintPath>..\..\PmxEditor_0275\Lib\System\PmxEditorLib.dll</HintPath>
+      <HintPath>$(PmxEditorDir)\Lib\System\PmxEditorLib.dll</HintPath>
     </Reference>
     <Reference Include="PmxLib">
-      <HintPath>..\..\PmxEditor_0275\Lib\System\PmxLib.dll</HintPath>
+      <HintPath>$(PmxEditorDir)\Lib\System\PmxLib.dll</HintPath>
     </Reference>
     <Reference Include="SlimDX">
-      <HintPath>..\..\PmxEditor_0275\Lib\SlimDX\x86\SlimDX.dll</HintPath>
+      <HintPath>$(PmxEditorDir)\Lib\SlimDX\x86\SlimDX.dll</HintPath>
     </Reference>
   </ItemGroup>
 

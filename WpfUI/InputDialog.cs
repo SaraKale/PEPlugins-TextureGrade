@@ -19,11 +19,19 @@ namespace TextureGrade.WpfUI
         public InputDialog(string title, string prompt, string defaultValue)
         {
             Text = title;
+<<<<<<< HEAD
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false; MinimizeBox = false;
             ShowInTaskbar = false;
             Size = new Size(460, 180);
+=======
+            StartPosition = FormStartPosition.CenterParent;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false; MinimizeBox = false;
+            ShowInTaskbar = false;
+            ClientSize = new Size(460, 190);
+>>>>>>> pr-1
             BackColor = Color.White;
             Font = new Font("Microsoft YaHei UI", 10.5f);
 

@@ -64,6 +64,7 @@ namespace TextureGrade.Models
 
         /// <summary>预设列表的排序方式。</summary>
         public enum PresetSort
+<<<<<<< HEAD
         {
             /// <summary>按名称（当前区域性的忽略大小写排序）——默认。</summary>
             Name,
@@ -155,11 +156,135 @@ namespace TextureGrade.Models
 
         /// <summary>写入自定义顺序。</summary>
         public static void SaveOrder(IEnumerable<string> names)
+=======
+>>>>>>> pr-1
         {
+            /// <summary>按名称（当前区域性的忽略大小写排序）——默认。</summary>
+            Name,
+            /// <summary>按修改时间，最近改过的排最前。改预设名也算改动。</summary>
+            Time,
+            /// <summary>手动顺序（用上移/下移调），顺序存在 presets\order.txt 里。</summary>
+            Custom
+        }
+
+        private const string OrderFile = "order.txt";
+
+        /// <summary>列出全部预设名（默认按名称排序）。</summary>
+        public static List<string> List() => List(PresetSort.Name);
+
+        /// <summary>按指定方式列出预设名。</summary>
+        public static List<string> List(PresetSort sort)
+        {
+            var names = new List<string>();
             try
             {
+<<<<<<< HEAD
                 System.IO.Directory.CreateDirectory(Folder);
                 File.WriteAllLines(Path.Combine(Folder, OrderFile), new List<string>(names));
+=======
+                foreach (var f in System.IO.Directory.GetFiles(Folder, "*" + Ext))
+                {
+                    string n = Path.GetFileNameWithoutExtension(f);
+                    if (!string.IsNullOrWhiteSpace(n)) names.Add(n);
+                }
+            }
+            catch { return names; }
+
+            switch (sort)
+            {
+                case PresetSort.Time:
+                    // 按修改时间倒序；读不到时间就退回按名称
+                    try
+                    {
+                        names.Sort((a, b) => { int cmp = LastWrite(b).CompareTo(LastWrite(a)); return cmp != 0 ? cmp : StringComparer.CurrentCultureIgnoreCase.Compare(a, b); });
+                        return names;
+                    }
+                    catch { break; }
+
+                case PresetSort.Custom:
+                    return ApplyOrder(names, LoadOrder());
+            }
+
+            names.Sort(StringComparer.CurrentCultureIgnoreCase.Compare);
+            return names;
+        }
+
+        private static DateTime LastWrite(string name)
+        {
+            try { return File.GetLastWriteTimeUtc(PathFor(name)); }
+            catch { return DateTime.MinValue; }
+        }
+
+        /// <summary>按 order.txt 里记录的顺序排；没记录过的名字按名称接在后面。</summary>
+        private static List<string> ApplyOrder(List<string> names, List<string> order)
+        {
+            var result = new List<string>();
+            var left = new HashSet<string>(names, StringComparer.OrdinalIgnoreCase);
+            foreach (string n in order)
+            {
+                string hit = null;
+                foreach (string c in names)
+                    if (string.Equals(c, n, StringComparison.OrdinalIgnoreCase)) { hit = c; break; }
+                if (hit != null && left.Remove(hit)) result.Add(hit);
+            }
+            var rest = new List<string>(left);
+            rest.Sort(StringComparer.CurrentCultureIgnoreCase.Compare);
+            result.AddRange(rest);
+            return result;
+        }
+
+        /// <summary>读取自定义顺序（每行一个预设名）。</summary>
+        public static List<string> LoadOrder()
+        {
+            var list = new List<string>();
+            try
+            {
+                string p = Path.Combine(Folder, OrderFile);
+                if (!File.Exists(p)) return list;
+                foreach (string line in File.ReadAllLines(p))
+                {
+                    string n = line == null ? "" : line.Trim();
+                    if (n.Length > 0 && !list.Contains(n, StringComparer.OrdinalIgnoreCase)) list.Add(n);
+                }
+            }
+            catch { /* 顺序文件坏了就当没有 */ }
+            return list;
+        }
+
+        /// <summary>写入自定义顺序。</summary>
+        public static void SaveOrder(IEnumerable<string> names)
+        {
+            WriteSidecar(OrderFile, string.Join(Environment.NewLine, names.Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.OrdinalIgnoreCase)));
+        }
+
+        /// <summary>
+        /// 预设改名（文件内容原样保留，只是换文件名）。
+        /// 目标名已存在、或名字非法时返回 false，调用方负责提示。
+        /// </summary>
+        public static bool Rename(string oldName, string newName)
+        {
+            if (string.IsNullOrWhiteSpace(oldName) || !ValidName(newName)) return false;
+            string clean = Sanitize(newName);
+            if (string.IsNullOrEmpty(clean) || clean == Sanitize(oldName)) return false;
+
+            string src = PathFor(oldName), dst = PathFor(clean);
+            if (!File.Exists(src) || File.Exists(dst)) return false;
+
+            bool moved = false;
+            try
+            {
+                File.Move(src, dst);
+                moved = true;
+
+                // 顺序文件里同步改名，否则改名后自定义顺序会对不上
+                var order = LoadOrder();
+                bool touched = false;
+                for (int i = 0; i < order.Count; i++)
+                    if (string.Equals(order[i], oldName, StringComparison.OrdinalIgnoreCase)) { order[i] = clean; touched = true; }
+                if (touched) SaveOrder(order);
+                try { File.SetLastWriteTimeUtc(dst, DateTime.UtcNow); } catch { }
+                return true;
+>>>>>>> pr-1
             }
             catch { /* 存不了顺序不影响使用 */ }
         }
@@ -179,6 +304,7 @@ namespace TextureGrade.Models
 
             try
             {
+<<<<<<< HEAD
                 File.Move(src, dst);
 
                 // 顺序文件里同步改名，否则改名后自定义顺序会对不上
@@ -188,6 +314,10 @@ namespace TextureGrade.Models
                     if (string.Equals(order[i], oldName, StringComparison.OrdinalIgnoreCase)) { order[i] = clean; touched = true; }
                 if (touched) SaveOrder(order);
                 return true;
+=======
+                if (moved) try { File.Move(dst, src); } catch { }
+                return false;
+>>>>>>> pr-1
             }
             catch { return false; }
         }
@@ -223,6 +353,36 @@ namespace TextureGrade.Models
         }
 
         public static bool Exists(string name) => File.Exists(PathFor(name));
+
+        public static PresetSort LoadSort()
+        {
+            try { if (Enum.TryParse(File.ReadAllText(Path.Combine(Folder, "sort.txt")).Trim(), out PresetSort sort) && Enum.IsDefined(typeof(PresetSort), sort)) return sort; }
+            catch { }
+            return PresetSort.Name;
+        }
+        public static void SaveSort(PresetSort sort)
+        {
+            WriteSidecar("sort.txt", sort.ToString());
+        }
+        private static void WriteSidecar(string name, string content)
+        {
+            Directory.CreateDirectory(Folder);
+            string path = Path.Combine(Folder, name), temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                File.WriteAllText(temporary, content);
+                if (File.Exists(path)) File.Replace(temporary, path, null);
+                else File.Move(temporary, path);
+            }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
+        }
+        private static bool ValidName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name) || name != name.Trim() || name.EndsWith(".") || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) return false;
+            string stem = name.Split('.')[0].ToUpperInvariant();
+            return !new[] { "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+                "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9" }.Contains(stem);
+        }
 
         private static string PathFor(string name)
             => Path.Combine(Folder, Sanitize(name) + Ext);

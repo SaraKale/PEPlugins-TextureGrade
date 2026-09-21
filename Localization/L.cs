@@ -197,10 +197,10 @@ namespace TextureGrade.Localization
 
             add("About.Title", "About Texture Grade", "关于 Texture Grade", "關於 Texture Grade", "Texture Grade について");
             add("About.Body",
-                "Texture Grade — PMX texture grading plug-in\nNon-destructive grading like Lightroom / Camera Raw.\n\nSupported formats: PNG / JPG / BMP / GIF / TIFF / TGA / DDS (DXT1,3,5)\n\nversion: 1.0.1\nby: SaraKale",
-                "Texture Grade — PMX 贴图调色插件\n仿 Lightroom / Camera Raw 的非破坏式贴图调色。\n\n贴图格式支持：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.1\nby:SaraKale",
-                "Texture Grade — PMX 貼圖調色外掛\n仿 Lightroom / Camera Raw 的非破壞式貼圖調色。\n\n貼圖格式支援：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.1\nby:SaraKale",
-                "Texture Grade — PMX テクスチャ調整プラグイン\nLightroom / Camera Raw 風の非破壊調色。\n\n対応形式：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.1\nby:SaraKale");
+                "Texture Grade — PMX texture grading plug-in\nNon-destructive grading like Lightroom / Camera Raw.\n\nSupported formats: PNG / JPG / BMP / GIF / TIFF / TGA / DDS (DXT1,3,5)\n\nversion: 1.0.3\nby: SaraKale",
+                "Texture Grade — PMX 贴图调色插件\n仿 Lightroom / Camera Raw 的非破坏式贴图调色。\n\n贴图格式支持：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.3\nby:SaraKale",
+                "Texture Grade — PMX 貼圖調色外掛\n仿 Lightroom / Camera Raw 的非破壞式貼圖調色。\n\n貼圖格式支援：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.3\nby:SaraKale",
+                "Texture Grade — PMX テクスチャ調整プラグイン\nLightroom / Camera Raw 風の非破壊調色。\n\n対応形式：PNG / JPG / BMP / GIF / TIFF / TGA / DDS(DXT1,3,5)\n\nversion:1.0.3\nby:SaraKale");
 
             // ---------------- 主界面固定文案 ----------------
             add("Title.Preview", "Texture + UV Preview", "贴图 + UV 预览", "貼圖 + UV 預覽", "テクスチャ + UV プレビュー");
@@ -218,14 +218,30 @@ namespace TextureGrade.Localization
             add("Btn.Redo", "Redo", "重做", "重做", "やり直し");
             add("Btn.Fit", "Fit", "适配", "適配", "フィット");
             add("Btn.Actual", "100%", "100%", "100%", "100%");
+            add("Tools.View", "View", "视图", "檢視", "表示");
+            add("Tools.Selection", "Selection", "选择", "選取", "選択");
+            add("Tools.Vertices", "Vertices", "顶点同步", "頂點同步", "頂点同期");
+            add("Tools.Source", "Model textures", "模型贴图", "模型貼圖", "モデルのテクスチャ");
+            add("Tools.Output", "Apply / Save", "应用与保存", "套用與儲存", "反映・保存");
+            add("Tools.History", "Grading history", "调色历史", "調色歷程", "調整履歴");
+            add("Scope.Title", "Grading scope", "调色范围", "調色範圍", "調整範囲");
+            add("Scope.Selection", "UV selection first", "UV 选区优先", "UV 選取優先", "UV 選択を優先");
+            add("Scope.Whole", "Whole texture", "整张贴图", "整張貼圖", "テクスチャ全体");
+            add("Scope.SelectionNote", "Grading the {0} selected UV faces. Switching to Whole texture includes pixels outside this selection.", "当前仅调整所选 {0} 个 UV 面；切换整张贴图会包含选区外像素。", "目前僅調整所選 {0} 個 UV 面；切換整張貼圖會包含選取外像素。", "選択した {0} UV 面のみ調整します。全体に切り替えると選択外の画素も含みます。");
+            add("Scope.WholeNote", "Whole texture: includes pixels outside this material's selection. {0} materials use this texture; other materials' UVs are gray. Refresh/Save only updates the current material's texture reference.", "整图调色也会改变本材质选区外像素。此贴图共供 {0} 个材质使用，其他材质 UV 显示为灰线；刷新／另存仅更新当前材质的贴图引用。", "整圖調色也會改變本材質選取外像素。此貼圖共供 {0} 個材質使用，其他材質 UV 顯示為灰線；更新／另存僅更新目前材質的貼圖參照。", "この材質の選択外画素も調整します。{0} 材質が使用し、他材質の UV は灰色で表示します。更新・保存で参照先が変わるのは現在の材質のみです。");
+            add("Scope.NoSelectionNote", "No UV selection: grading the whole image, including other material regions. {0} materials use this texture. Refresh/Save only updates the current material's texture reference.", "尚未选择 UV：当前会调整整图，包含其他材质可能使用的区域（共 {0} 个材质使用此贴图）。刷新／另存仅更新当前材质的贴图引用。", "尚未選取 UV：目前會調整整圖，包含其他材質可能使用的區域（共 {0} 個材質使用此貼圖）。更新／另存僅更新目前材質的貼圖參照。", "UV 未選択のため他材質の領域を含む画像全体を調整します（{0} 材質が使用）。更新・保存で参照先が変わるのは現在の材質のみです。");
+            add("Scope.ContextFailed", "Other material UVs could not be displayed: {0}", "其他材质 UV 显示失败：{0}", "其他材質 UV 顯示失敗：{0}", "他材質の UV を表示できません：{0}");
             add("Btn.Grid", "Grid", "网格", "格線", "グリッド");
+            add("Btn.HideUV", "Hide UV", "隐藏 UV", "隱藏 UV", "UV を隠す");
+            add("Btn.ShowUV", "Show UV", "显示 UV", "顯示 UV", "UV を表示");
+            add("Tip.ToggleUV", "Show or hide UV lines and vertex markers. Selection and grading stay unchanged.", "显示或隐藏 UV 线框及顶点标记，不改变选区和调色结果。", "顯示或隱藏 UV 線框及頂點標記，不改變選取範圍和調色結果。", "UV 線と頂点マーカーの表示を切り替えます。選択範囲と調色結果は変わりません。");
             add("Btn.ModeToPan", "Pan", "平移", "平移", "平移");
             add("Btn.ModeToSelect", "Select", "选面", "選面", "選択");
             add("Btn.Island", "Select Island", "选连通块", "選連通塊", "アイランド選択");
             add("Btn.ClearSel", "Clear Selection", "清空选区", "清除選取", "選択解除");
             add("Btn.Compare", "Compare Original", "对比原图", "對比原圖", "元画像比較");
-            add("Btn.RecvVerts", "Recv Vertices", "接收选择顶点", "接收選取頂點", "選択頂点を受信");
-            add("Btn.SendVerts", "Send Vertices", "发送选择顶点", "傳送選取頂點", "選択頂点を送信");
+            add("Btn.RecvVerts", "From Model", "从模型接收", "從模型接收", "モデルから受信");
+            add("Btn.SendVerts", "To Model", "发送到模型", "傳送到模型", "モデルへ送信");
             add("Tip.RecvVerts", "Read the vertices currently selected in the PMXEditor 3D view and mark them red here (only those used by this material)",
                                 "读取 PMXEditor 3D 视图当前选中的顶点，在本面板标红（只保留本材质用到的）",
                                 "讀取 PMXEditor 3D 視圖目前選取的頂點，在本面板標紅（只保留本材質用到的）",
@@ -255,7 +271,6 @@ namespace TextureGrade.Localization
             add("Grp.Preset", "Presets / Favorites", "预设 / 收藏", "預設 / 收藏", "プリセット / お気に入り");
             add("Grp.Basic", "Basic", "基本", "基本", "基本");
             add("Grp.Color", "Color", "色彩", "色彩", "カラー");
-            add("Grp.Lab", "Lab Color Wheel (brightness locked)", "Lab 取色环（亮度锁定）", "Lab 取色環（亮度鎖定）", "Lab カラーホイール（明度ロック）");
             add("Grp.Hsl", "HSL per Channel (8 colors)", "HSL 分通道（8 色）", "HSL 分通道（8 色）", "HSL チャンネル別（8 色）");
             add("Grp.Curve", "Curves / Levels / RGB / HSV", "曲线 / 色阶 / RGB / HSV", "曲線 / 色階 / RGB / HSV", "カーブ / レベル / RGB / HSV");
             add("Grp.Detail", "Detail", "细节", "細節", "ディテール");
@@ -289,12 +304,17 @@ namespace TextureGrade.Localization
             add("HsvValue", "HSV · Value", "HSV·明度", "HSV·明度", "HSV·明度");
             add("Clarity", "Clarity", "清晰度", "清晰度", "クラリティ");
             add("Sharpen", "Sharpen", "锐化", "銳化", "シャープ");
-            add("Gradient", "Gradient", "渐变", "漸變", "グラデーション");
-            add("Grayscale", "Black & White", "黑白", "黑白", "白黒");
+            add("Grayscale", "Grayscale", "黑白化", "黑白化", "白黒化");
             add("Invert", "Invert", "反相", "反相", "反転");
-            add("Threshold", "Threshold", "阈值", "閾值", "2 値化");
-            add("LabTargetL", "Target Lightness L*", "目标亮度 L*", "目標亮度 L*", "目標明度 L*");
-            add("LabAmount", "Amount", "强度", "強度", "強度");
+            add("Threshold", "Threshold mix", "阈值强度", "閾值強度", "2 値化の強度");
+            add("ThresholdLevel", "Threshold level", "黑白分界值", "黑白分界值", "2 値化の境界値");
+            add("Fx.ThresholdTip", "0% disables thresholding; 100% produces solid black/white regions. Intermediate values blend with the original colors.",
+                "0% 关闭阈值效果；100% 得到纯黑白块，中间值与原颜色混合。", "0% 關閉閾值效果；100% 得到純黑白塊，中間值與原色混合。", "0% で無効、100% で白黒の領域に変換します。中間値では元の色と混合します。");
+            add("Fx.ThresholdLevelTip", "Brightness below this value becomes black; at or above it becomes white. Range 0–255, default 127.5. Higher values expand black regions. Type a value and press Enter, or drag the slider.",
+                "亮度低于此值变黑，达到此值变白；范围 0–255，默认 127.5。值越大，黑色区域越多。可输入数值后按 Enter，或拖动滑块。", "亮度低於此值變黑，達到此值變白；範圍 0–255，預設 127.5。值越大，黑色區域越多。可輸入數值後按 Enter，或拖曳滑桿。", "この値未満は黒、以上は白になります。範囲は 0–255、既定は 127.5。大きくすると黒い領域が増えます。数値入力後 Enter、またはスライダーで調整できます。");
+            add("Fx.GrayscaleTip", "Blends colors toward their weighted brightness while preserving continuous gray tones. 0 keeps the original colors; 100 produces a grayscale image.",
+                "按加权亮度将颜色转为连续灰阶，滑块控制黑白化强度。0 保留原色，100 完全黑白化。", "依加權亮度將色彩轉為連續灰階，滑桿控制黑白化強度。0 保留原色，100 完全黑白化。", "色を加重した明るさに変換し、連続した階調を保ちます。0 は元の色を保持、100 は完全な白黒化です。");
+            add("Fx.InvalidThreshold", "Enter a threshold level from 0 to 255.", "请输入 0–255 的黑白分界值。", "請輸入 0–255 的黑白分界值。", "0–255 の境界値を入力してください。");
 
             // HSL 分通道的小节标题
             add("Band.Red", "Red", "红 Red", "紅 Red", "赤 Red");
@@ -336,6 +356,7 @@ namespace TextureGrade.Localization
             add("Preset.DefaultName", "My Preset", "我的预设", "我的預設", "マイプリセット");
             add("Preset.Suffix", " recipe", " 配方", " 配方", " 配方");
 
+<<<<<<< HEAD
             // 预设管理：改名 / 排序 / 手动调序
             add("Preset.Rename", "Rename", "改名", "改名", "名前を変更");
             add("Preset.RenameTitle", "Rename Preset", "重命名预设", "重新命名預設", "プリセット名を変更");
@@ -385,6 +406,8 @@ namespace TextureGrade.Localization
             add("Lab.ScopeSelection", "Selection", "选区", "選取", "選択範囲");
             add("Lab.ScopeWhole", "Whole image", "整张图", "整張圖", "画像全体");
 
+=======
+>>>>>>> pr-1
             // ---------------- 状态栏 / 消息 ----------------
             add("St.LangChanged", "Language switched", "已切换语言", "已切換語言", "言語を切り替えました");
             add("St.NeedMaterial", "Please select a material first", "请先选择一个材质", "請先選擇一個材質", "先に材質を選択してください");
@@ -487,7 +510,7 @@ namespace TextureGrade.Localization
                                      "{0} 枚の材質マスクを {1} に書き出し{2}{3}");
             add("St.AllMaskSkipFmt", "，{0} 个材质没有 UV 面已跳过", "，{0} 个材质没有 UV 面已跳过", "，{0} 個材質沒有 UV 面已跳過", "、UV 面のない材質 {0} 件をスキップ");
             add("St.AllMaskFailFmt", "，{0} 张失败", "，{0} 张失败", "，{0} 張失敗", "、{0} 枚失敗");
-            add("St.NeedTextureForLab", "Please select a material with a texture first", "请先选择一个有贴图的材质", "請先選擇一個有貼圖的材質", "先にテクスチャ付きの材質を選択してください");
+            add("St.NeedTexture", "Please select a material with a texture first", "请先选择一个有贴图的材质", "請先選擇一個有貼圖的材質", "先にテクスチャ付きの材質を選択してください");
 
             // ---------------- 对话框 ----------------
             add("Dlg.OK", "OK", "确定", "確定", "OK");
@@ -569,6 +592,118 @@ namespace TextureGrade.Localization
                                 "尚未開啟 PMX 模型。\n\n請先在 PMXEditor 裡開啟（或載入）一個模型，再執行本外掛。",
                                 "PMX モデルが開かれていません。\n\nPMXエディタでモデルを開いてから、本プラグインを再度実行してください。");
 
+            add("File.SaveNewAs", "Save as New Texture… (pick format & size)", "另存为新贴图…（选格式与尺寸）", "另存為新貼圖…（選格式與尺寸）", "新規テクスチャに保存…（形式とサイズを選択）");
+            add("File.ExportSelectionAlpha", "Export Selection Mask… (as Alpha channel PNG)", "导出选区蒙版…（带 Alpha 通道 PNG）", "匯出選取遮罩…（含 Alpha 通道 PNG）", "選択範囲マスクを書き出し…（アルファ通道付き PNG）");
+            add("Edit.InvertSel", "Invert UV Selection", "反选 UV 选区", "反選 UV 選取", "UV 選択を反転");
+            add("Grp.Lab", "Lab Color Wheel (brightness locked)", "Lab 取色环（亮度锁定）", "Lab 取色環（亮度鎖定）", "Lab カラーホイール（明度ロック）");
+            add("Gradient", "Gradient", "渐变", "漸變", "グラデーション");
+            add("LabTargetL", "Target Lightness L*", "目标亮度 L*", "目標亮度 L*", "目標明度 L*");
+            add("LabAmount", "Amount", "强度", "強度", "強度");
+            add("Preset.Rename", "Rename", "改名", "改名", "名前を変更");
+            add("Preset.RenameTitle", "Rename Preset", "重命名预设", "重新命名預設", "プリセット名を変更");
+            add("Preset.RenamePrompt", "New name for \"{0}\":", "给「{0}」起个新名字：", "為「{0}」取個新名字：", "「{0}」の新しい名前：");
+            add("Preset.RenameDup", "A preset named \"{0}\" already exists.", "已经有叫「{0}」的预设了。", "已經有叫「{0}」的預設了。", "「{0}」というプリセットは既に存在します。");
+            add("Preset.Renamed", "Renamed \"{0}\" to \"{1}\"", "已把「{0}」改名为「{1}」", "已把「{0}」改名為「{1}」", "「{0}」を「{1}」に変更しました");
+            add("Preset.RenameFail", "Rename failed: \"{0}\" (invalid name, or the file is in use)", "改名失败：「{0}」（名字不合法或文件被占用）", "改名失敗：「{0}」（名字不合法或檔案被佔用）", "名前の変更に失敗：「{0}」（無効な名前、またはファイルが使用中）");
+            add("Preset.SortFmt", "Sort: {0}", "排序：{0}", "排序：{0}", "並び替え：{0}");
+            add("Preset.SortName", "by name", "按名称", "按名稱", "名前順");
+            add("Preset.SortTime", "by time", "按时间", "按時間", "更新順");
+            add("Preset.SortCustom", "manual", "手动顺序", "手動順序", "手動");
+            add("Preset.Sorted", "Preset list sorted ({0})", "预设列表已按 {0} 排序", "預設清單已按 {0} 排序", "プリセットを {0} で並び替えました");
+            add("Preset.Up", "Move Up", "上移", "上移", "上へ");
+            add("Preset.Down", "Move Down", "下移", "下移", "下へ");
+            add("Preset.Moved", "Moved \"{0}\" to position {1} of {2}", "已把「{0}」移到第 {1} 位（共 {2} 个）", "已把「{0}」移到第 {1} 位（共 {2} 個）", "「{0}」を {2} 件中 {1} 番目に移動しました");
+            add("Preset.AtTop", "Already at the top", "已经在最前面了", "已經在最前面了", "すでに先頭です");
+            add("Preset.AtBottom", "Already at the bottom", "已经在最后面了", "已經在最後面了", "すでに末尾です");
+            add("Lab.WheelTip", "Outer ring: hue (constant lightness)\nInner disc: chroma (a single line at fixed lightness)",
+                                "外环：色相（等亮度）\n内圈：彩度（固定亮度下的一条线）",
+                                "外環：色相（等亮度）\n內圈：彩度（固定亮度下的一條線）",
+                                "外環：色相（明度一定）\n内円：彩度（明度固定の1本の線）");
+            add("Lab.Lock", "Lock lightness L* (change color only, brightness untouched)", "锁定亮度 L*（只换颜色，明暗完全不变）", "鎖定亮度 L*（只換顏色，明暗完全不變）", "明度 L* をロック（色だけ変更、明暗は不変）");
+            add("Lab.LockTip", "Checked: any color you pick only changes a*/b*; every pixel keeps its own lightness L*.\nUnchecked: lightness also moves toward the target.",
+                               "勾选：色环上取任何颜色都只改 a*/b*，每个像素自身的亮度 L* 原样保留。\n取消：连亮度也一起朝目标色靠拢。",
+                               "勾選：色環上取任何顏色都只改 a*/b*，每個像素自身的亮度 L* 原樣保留。\n取消：連亮度也一起朝目標色靠攏。",
+                               "オン：選んだ色は a*/b* のみ変更し、各ピクセルの明度 L* は保持されます。\nオフ：明度も目標色に近づきます。");
+            add("Lab.PickL", "Pick Image Lightness", "取画面亮度", "取畫面亮度", "画像の明度を取得");
+            add("Lab.PickHue", "Pick Image Hue", "取画面色相", "取畫面色相", "画像の色相を取得");
+            add("Lab.Reset", "Reset", "重置", "重設", "リセット");
+            add("Lab.Note", "The wheel is an iso-lightness hue ring (every angle is at max chroma for that lightness); the inner disc is the chroma line of the current hue.\nWith lightness locked, brightness never changes no matter where you turn — only hue and chroma do.",
+                            "色环 = 等亮度色相环（环上每个角度都取该亮度下的最高彩度）；内圈 = 当前色相的彩度线。\n锁定亮度时不管在环上转到哪，画面明暗都不变，只是色相/彩度在动。",
+                            "色環 = 等亮度色相環（環上每個角度都取該亮度下的最高彩度）；內圈 = 目前色相的彩度線。\n鎖定亮度時不管在環上轉到哪，畫面明暗都不變，只是色相/彩度在動。",
+                            "ホイールは等明度色相環（どの角度もその明度での最高彩度）、内円は現在の色相の彩度線です。\n明度をロックすると、どこに回しても明るさは変わらず色相と彩度だけが動きます。");
+            add("Lab.InfoFmt", "#{0:X2}{1:X2}{2:X2}   Chroma {3:F0}   Hue {4:F0}°\n{5}   Amount {6:F0}%",
+                               "#{0:X2}{1:X2}{2:X2}   彩度 {3:F0}   色相 {4:F0}°\n{5}   强度 {6:F0}%",
+                               "#{0:X2}{1:X2}{2:X2}   彩度 {3:F0}   色相 {4:F0}°\n{5}   強度 {6:F0}%",
+                               "#{0:X2}{1:X2}{2:X2}   彩度 {3:F0}   色相 {4:F0}°\n{5}   強度 {6:F0}%");
+            add("Lab.Locked", "● Lightness locked (brightness unchanged)", "● 亮度锁定（明暗不变）", "● 亮度鎖定（明暗不變）", "● 明度ロック（明暗不変）");
+            add("Lab.Unlocked", "○ Lightness adjustable", "○ 亮度可调", "○ 亮度可調", "○ 明度調整可");
+            add("Lab.LockOn", "Lab wheel: lightness locked (only hue/chroma change, brightness stays)", "Lab 取色环：已锁定亮度（只改色相/彩度，画面明暗不变）", "Lab 取色環：已鎖定亮度（只改色相/彩度，畫面明暗不變）", "Lab ホイール：明度をロック（色相/彩度のみ変化、明暗は不変）");
+            add("Lab.LockOff", "Lab wheel: lightness unlocked (brightness also moves toward the target)", "Lab 取色环：已解除亮度锁定（亮度也会朝目标色靠拢）", "Lab 取色環：已解除亮度鎖定（亮度也會朝目標色靠攏）", "Lab ホイール：明度ロック解除（明るさも目標色に近づきます）");
+            add("Lab.ResetDone", "Lab wheel reset (amount 0 = not applied)", "Lab 取色环已重置（强度 0 = 不参与调色）", "Lab 取色環已重設（強度 0 = 不參與調色）", "Lab ホイールをリセット（強度 0 = 適用なし）");
+            add("Lab.PickedLFmt", "{0} average lightness L* = {1:F1} (wheel drawn at this lightness)", "{0}平均亮度 L* = {1:F1}（色环已按这个亮度绘制）", "{0}平均亮度 L* = {1:F1}（色環已按這個亮度繪製）", "{0}の平均明度 L* = {1:F1}（この明度でホイールを描画）");
+            add("Lab.PickedHueFmt", "Picked {0} average color (a*={1:F1}, b*={2:F1}) into the wheel", "已取{0}平均色（a*={1:F1}, b*={2:F1}）到取色环", "已取{0}平均色（a*={1:F1}, b*={2:F1}）到取色環", "{0}の平均色（a*={1:F1}, b*={2:F1}）をホイールに取得しました");
+            add("Lab.ScopeSelection", "Selection", "选区", "選取", "選択範囲");
+            add("Lab.ScopeWhole", "Whole image", "整张图", "整張圖", "画像全体");
+            add("St.InvertedFmt", "Inverted selection — {0} of {1} UV triangles selected", "已反选 —— {0}/{1} 个 UV 三角面处于选中状态", "已反選 —— {0}/{1} 個 UV 三角面處於選取狀態", "選択を反転 — {1} 枚中 {0} 枚を選択");
+            add("St.InvertedEmpty", "Inverted selection — nothing selected now (the previous selection was everything)", "已反选 —— 当前没有选中面（原来的选区是全部）", "已反選 —— 目前沒有選取面（原本的選取是全部）", "選択を反転 — 現在の選択はなし（前回は全選択でした）");
+            add("St.RefreshFailFmt", "Pushing to the 3D model failed: {0}", "刷新到 3D 模型失败：{0}", "刷新到 3D 模型失敗：{0}", "3D モデルへの反映に失敗：{0}");
+            add("St.PreviewFallbackFmt", "Texture folder is not writable — preview written to {0} instead",
+                                         "贴图所在目录不可写，临时预览已改写到 {0}",
+                                         "貼圖所在目錄不可寫，暫存預覽已改寫到 {0}",
+                                         "テクスチャのフォルダに書き込めないため、一時プレビューを {0} に書き出しました");
+            add("St.SelRestoredFmt", "Restored this material's previous UV selection ({0} triangles) — grading still applies to the selection only",
+                                     "已恢复该材质上一次的 UV 选区（{0} 个三角面）—— 调色仍只作用于选区",
+                                     "已恢復該材質上一次的 UV 選取（{0} 個三角面）—— 調色仍只作用於選取",
+                                     "この材質の前回の UV 選択を復元しました（{0} 枚）— 調色は選択範囲のみに適用されます");
+            add("St.SavedAsFmt", "Saved as {0} ({1}×{2}) and pointed the material at it", "已另存为 {0}（{1}×{2}）并让材质指向它", "已另存為 {0}（{1}×{2}）並讓材質指向它", "{0}（{1}×{2}）として保存し、材質の参照先を変更しました");
+            add("St.NeedTextureForLab", "Please select a material with a texture first", "请先选择一个有贴图的材质", "請先選擇一個有貼圖的材質", "先にテクスチャ付きの材質を選択してください");
+            add("Dlg.OK", "OK", "确定", "確定", "OK");
+            add("Dlg.Cancel", "Cancel", "取消", "取消", "キャンセル");
+            add("SaveDlg.Title", "Save Texture As", "另存贴图为", "另存貼圖為", "テクスチャを別名保存");
+            add("SaveDlg.Path", "File", "文件", "檔案", "ファイル");
+            add("SaveDlg.Browse", "Browse…", "浏览…", "瀏覽…", "参照…");
+            add("SaveDlg.Format", "Format", "格式", "格式", "形式");
+            add("SaveDlg.Size", "Size", "尺寸", "尺寸", "サイズ");
+            add("SaveDlg.SizeOriginal", "Original (100%)", "原尺寸（100%）", "原尺寸（100%）", "元サイズ（100%）");
+            add("SaveDlg.SizeHalf", "Half (50%)", "二分之一（50%）", "二分之一（50%）", "1/2（50%）");
+            add("SaveDlg.SizeQuarter", "Quarter (25%)", "四分之一（25%）", "四分之一（25%）", "1/4（25%）");
+            add("SaveDlg.SizeCustom", "Custom…", "自定义…", "自訂…", "カスタム…");
+            add("SaveDlg.Width", "W", "宽", "寬", "幅");
+            add("SaveDlg.Height", "H", "高", "高", "高");
+            add("SaveDlg.Quality", "JPEG quality", "JPEG 质量", "JPEG 品質", "JPEG 品質");
+            add("SaveDlg.NoAlpha", "No alpha channel", "不含 Alpha 通道", "不含 Alpha 通道", "アルファなし");
+            add("SaveDlg.Lossy", "Lossy compression", "有损压缩", "有損壓縮", "非可逆圧縮");
+            add("SaveDlg.DdsNote", "DDS sizes are safest as powers of two", "DDS 建议宽高保持 2 的幂", "DDS 建議寬高保持 2 的冪", "DDS は幅・高さを 2 のべき乗にするのが無難");
+            add("SaveDlg.InfoFmt", "Source {0}×{1} → output {2}×{3}", "原图 {0}×{1} → 输出 {2}×{3}", "原圖 {0}×{1} → 輸出 {2}×{3}", "元 {0}×{1} → 出力 {2}×{3}");
+            add("SaveDlg.Save", "Save", "保存", "保存", "保存");
+            add("SaveDlg.Cancel", "Cancel", "取消", "取消", "キャンセル");
+            add("SaveDlg.NeedPath", "Please choose where to save the file.", "请选择保存位置。", "請選擇儲存位置。", "保存先を選んでください。");
+            add("SaveDlg.FilterAll", "All supported formats|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.tga;*.dds|All files|*.*",
+                                     "所有支持的格式|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.tga;*.dds|所有文件|*.*",
+                                     "所有支援的格式|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.tga;*.dds|所有檔案|*.*",
+                                     "対応形式|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff;*.tga;*.dds|すべてのファイル|*.*");
+            add("AlphaDlg.Title", "Export Selection Mask (Alpha Channel)", "导出选区蒙版（Alpha 通道）", "匯出選取遮罩（Alpha 通道）", "選択範囲マスクを書き出し（アルファチャンネル）");
+            add("AlphaDlg.Desc", "The alpha channel holds the selection (selected = opaque).\nWhat should the RGB channels contain? Currently {0} UV faces are selected.",
+                                 "Alpha 通道保存选区（选中 = 不透明）。RGB 通道要放什么？\n当前选中 {0} 个 UV 面。",
+                                 "Alpha 通道保存選取（選取 = 不透明）。RGB 通道要放什麼？\n目前選取 {0} 個 UV 面。",
+                                 "アルファチャンネルに選択範囲（選択 = 不透明）を入れます。\nRGB には何を入れますか？現在 {0} 枚の UV 面が選択中。");
+            add("AlphaDlg.White", "Plain white (best as a layer mask)", "纯白（最适合当图层蒙版）", "純白（最適合當圖層遮罩）", "白一色（レイヤーマスク向け）");
+            add("AlphaDlg.Original", "Original texture (see what you selected)", "原贴图（方便看选的是哪块）", "原貼圖（方便看選的是哪塊）", "元テクスチャ（選択箇所の確認向け）");
+            add("AlphaDlg.Graded", "Graded result (pull out the graded area)", "调色结果（方便把调好的部分抠出来）", "調色結果（方便把調好的部分摳出來）", "調整結果（調整部分の抜き出し向け）");
+            add("Dlg.AlphaBodyFmt", "Alpha mask exported to:\n{0}\n\nSize {1}×{2}; alpha = the {3} selected UV faces (255), the rest transparent (0).\nRGB = {4}.\nIn Photoshop: Ctrl+click the layer thumbnail to load the selection, or paste it straight into a layer mask.",
+                                    "带 Alpha 的蒙版已导出到：\n{0}\n\n尺寸 {1}×{2}；alpha：选中的 {3} 个 UV 面 = 255，其余 = 0（透明）。\nRGB = {4}。\n在 PS 里：Ctrl+点击图层缩略图即可载入选区，也可以直接贴进图层蒙版。",
+                                    "帶 Alpha 的遮罩已匯出到：\n{0}\n\n尺寸 {1}×{2}；alpha：選取的 {3} 個 UV 面 = 255，其餘 = 0（透明）。\nRGB = {4}。\n在 PS 裡：Ctrl+點擊圖層縮圖即可載入選取，也可以直接貼進圖層遮罩。",
+                                    "アルファ付きマスクを書き出し：\n{0}\n\nサイズ {1}×{2}、アルファ：選択した {3} 枚 = 255、その他 = 0（透明）。\nRGB = {4}。\nPhotoshop では Ctrl+クリックで選択範囲を読み込み、そのままレイヤーマスクにも貼り付けられます。");
+            add("St.SaveAsFail", "Saving failed: {0}", "保存失败：{0}", "儲存失敗：{0}", "保存に失敗：{0}");
+            add("St.AlphaExportedFmt", "Alpha mask exported: {0} ({1}×{2}, {3} faces)", "带 Alpha 的蒙版已导出：{0}（{1}×{2}，{3} 个面）", "帶 Alpha 的遮罩已匯出：{0}（{1}×{2}，{3} 個面）", "アルファ付きマスクを書き出し：{0}（{1}×{2}、{3} 枚）");
+            RecolorTexts.Add(d);
+            add("St.SelectionRestored", "Restored UV selection ({0} triangles); the grading scope is unchanged.", "已恢复 UV 选区（{0} 个面），调色范围保持原设置。", "已恢復 UV 選取（{0} 個面），調色範圍保持原設定。", "UV 選択（{0} 面）を復元しました。調色範囲は元の設定を保持します。");
+            add("File.SavePngQuick", "Quick save as new PNG", "快速另存为 PNG", "快速另存為 PNG", "新規 PNG にクイック保存");
+            add("SaveDlg.BinaryAlpha", "Alpha becomes binary (transparent/opaque).", "Alpha 仅保留全透明/不透明两级。", "Alpha 僅保留全透明/不透明兩級。", "アルファは透明・不透明の二値になります。");
+            add("SaveDlg.TooLarge", "Output exceeds the 64-megapixel limit.", "输出不能超过 64 × 1024 × 1024 像素。", "輸出不能超過 64 × 1024 × 1024 像素。", "出力は 64 × 1024 × 1024 ピクセル以下にしてください。");
+            add("SaveDlg.Overwrite", "Replace the existing file?\n{0}", "替换已有文件？\n{0}", "取代現有檔案？\n{0}", "既存のファイルを置き換えますか？\n{0}");
+            add("SaveDlg.ProtectSource", "Choose a new filename to preserve the original texture.", "请选择新文件名，以保留原始贴图。", "請選擇新檔名，以保留原始貼圖。", "元のテクスチャを保護するため、新しいファイル名を指定してください。");
+            add("Preset.StorageFail", "Cannot save preset order: {0}", "无法保存预设排序：{0}", "無法儲存預設排序：{0}", "プリセットの順序を保存できません：{0}");
             return d;
         }
     }

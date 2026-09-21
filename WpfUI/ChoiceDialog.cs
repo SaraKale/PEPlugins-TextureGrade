@@ -17,7 +17,11 @@ namespace TextureGrade.WpfUI
         public ChoiceDialog(string title, string description, string[] options, int defaultIndex)
         {
             Text = title;
+<<<<<<< HEAD
             StartPosition = FormStartPosition.CenterScreen;
+=======
+            StartPosition = FormStartPosition.CenterParent;
+>>>>>>> pr-1
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false; MinimizeBox = false;
             ShowInTaskbar = false;

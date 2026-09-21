@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;   // ToggleButton 在这里，不在 System.Windows.Controls
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -116,7 +118,11 @@ namespace TextureGrade.WpfUI
 
         // 直方图：256 级 RGB 计数（原图 / 当前调色结果各一份）
         private int[] _histOriginal, _histGraded;
-        private bool _showHistogram = true;
+        // 默认关闭：直方图 + 三组预览工具都收起，把高度让给贴图画布（视图菜单可随时开）
+        private bool _showHistogram;
+
+        // 界面状态持久化（直方图开关 / 预览工具三组折叠），存插件目录 ui.json
+        private readonly UiState _uiState = new UiState();
 
         // 分材质保存的调色参数：材质索引 -> 参数快照
         private readonly Dictionary<int, Dictionary<string, double>> _matParams
@@ -148,13 +154,6 @@ namespace TextureGrade.WpfUI
         private int _thumbGeneration;
         private const int ThumbSize = 40;
 
-        // Lab 取色环（勾选「锁定亮度」时，只换色相/彩度，像素自身的 L* 一点不动）
-        private LabWheel _labWheel;
-        private TextBlock _labInfo;
-        private CheckBox _labLockBox;
-        private bool _syncLab;                 // 防止「色环 -> 设置 -> 色环」自激
-        private double _refL = 55;             // 画面平均亮度 L*：锁定亮度时色环的绘制锚点
-
         // 视图变换（缩放/平移）
         private double _zoom = 1, _panX, _panY;
         private bool _autoFit = true;
@@ -177,20 +176,6 @@ namespace TextureGrade.WpfUI
         private readonly HashSet<int> _recvVerts = new HashSet<int>();
         /// <summary>本材质用到的全局顶点索引 -> UV 坐标（标红 / 过滤接收结果用）。</summary>
         private Dictionary<int, (float u, float v)> _vertUv = new Dictionary<int, (float u, float v)>();
-
-        // UV 几何缓存（未选中的面 + 顶点记号），只在换材质/改选区时重建，
-        // 这样缩放时只改线宽，不必重新构建上千个三角面。
-        private StreamGeometry _geoAllCache, _geoDotsCache;
-        private double _geoDotsZoom;
-        private bool _geoDirty = true;
-
-        /// <summary>选区/材质变化后让 UV 几何缓存失效（下次绘制时重建）。</summary>
-        private void InvalidateGeo()
-        {
-            _geoDirty = true;
-            _geoDotsCache = null;
-            _geoDotsZoom = 0;
-        }
 
         // UV 显示颜色
         private Color _uvLine = Color.FromArgb(195, 0, 118, 214);
@@ -225,14 +210,19 @@ namespace TextureGrade.WpfUI
             _debounce.Tick += (s, e) => { _debounce.Stop(); RunGradeAsync(); };
             Settings.PropertyChanged += (s, e) =>
             {
+                SyncTextureScopeUi();
+                InvalidateGrade();
                 MarkCurrentModified();
-                if (!_syncLab) SyncLabFromSettings();   // 撤销/预设/重置后把色环拉回同步
                 _debounce.Stop();
                 _debounce.Start();
             };
 
             Loaded += (s, e) => { if (_autoFit) FitView(); UpdateHint(); DrawHistogram(); };
+<<<<<<< HEAD
             PreviewKeyDown += MainPanel_PreviewKeyDown;   // Ctrl+I 反选 / Ctrl+A 全选
+=======
+            PreviewKeyDown += SelectionShortcut;
+>>>>>>> pr-1
             ViewRoot.SizeChanged += (s, e) => { if (_autoFit) FitView(); };
             HistogramCanvas.SizeChanged += (s, e) => DrawHistogram();
 
@@ -246,7 +236,7 @@ namespace TextureGrade.WpfUI
 
             BtnReRead.Click += (s, e) => ReRead();
             BtnRefresh.Click += (s, e) => RefreshModel();
-            BtnSave.Click += (s, e) => SaveNew();
+            BtnSave.Click += (s, e) => SaveNewAs();
             BtnRevert.Click += (s, e) => Revert();
             BtnReset.Click += (s, e) => ResetParams();
             BtnUndo.Click += (s, e) => Undo();
@@ -255,15 +245,32 @@ namespace TextureGrade.WpfUI
             BtnFit.Click += (s, e) => FitView();
             BtnActual.Click += (s, e) => ActualSize();
             BtnGrid.Click += (s, e) => SetGridVisible(!_showGrid);
-            BtnMode.Click += (s, e) => SetPanMode(_mode != ToolMode.Pan);
+            BtnToggleUV.Click += (s, e) => SetShowUV(!_showUV);
+            BtnSelectMode.Click += (s, e) => SetPanMode(false);
+            BtnMode.Click += (s, e) => SetPanMode(true);
             BtnIsland.Click += (s, e) => SelectConnectedIsland();
             BtnClearSel.Click += (s, e) => ClearUVSelection();
+            BtnInvertSel.Click += (s, e) => InvertUVSelection();
+            LocContent(BtnInvertSel, "Edit.InvertSel");
             // 对比原图：用「切换」而不是「按住」，避免按住时与画布操作互相干扰
             BtnCompare.Click += (s, e) => SetCompareOriginal(!_compareMode);
             BtnRecvVerts.Click += (s, e) => ReceiveSelectedVertices();
             BtnSendVerts.Click += (s, e) => SendSelectedVertices();
+            ScopeSelection.Checked += (s, e) => SetWholeTextureScope(false);
+            ScopeWhole.Checked += (s, e) => SetWholeTextureScope(true);
             LocTip(BtnRecvVerts, "Tip.RecvVerts");
             LocTip(BtnSendVerts, "Tip.SendVerts");
+
+            // 预览工具三组：点胶囊开关折叠/展开，状态记在 ui.json（默认全收起）
+            WireToolGroup(ToolsViewToggle, ToolsViewBody, UiState.KeyToolsView);
+            WireToolGroup(ToolsSelToggle, ToolsSelBody, UiState.KeyToolsSelection);
+            WireToolGroup(ToolsVertToggle, ToolsVertBody, UiState.KeyToolsVertices);
+            LocContent(ToolsViewToggle, "Tools.View");
+            LocContent(ToolsSelToggle, "Tools.Selection");
+            LocContent(ToolsVertToggle, "Tools.Vertices");
+
+            // 直方图默认关闭，上次手动开过就继续保持
+            SetHistogramVisible(_uiState.IsOn(UiState.KeyHistogram));
 
             BuildRightPanel();
             RefreshPresetList();
@@ -316,11 +323,16 @@ namespace TextureGrade.WpfUI
         public void ApplyLanguage()
         {
             foreach (var act in _locActions) act();
+            RefreshRecolorUi();
 
             if (TxtPreviewTitle != null) TxtPreviewTitle.Text = L.T("Title.Preview");
             if (TxtMaterialTitle != null) TxtMaterialTitle.Text = L.T("Title.Materials");
             if (TxtAdjustTitle != null) TxtAdjustTitle.Text = L.T("Title.Adjust");
             if (TxtHistLabel != null) TxtHistLabel.Text = L.T("Hist.Label");
+            TxtSourceTools.Text = L.T("Tools.Source");   // 三组折叠开关的文案由 LocContent 登记，这里不用再管
+            TxtOutputTools.Text = L.T("Tools.Output");
+            TxtHistoryTools.Text = L.T("Tools.History");
+            SyncTextureScopeUi();
 
             // XAML 里写死的按钮文字（中文只是设计时的默认值）
             BtnReRead.Content = L.T("Btn.ReRead");
@@ -333,13 +345,14 @@ namespace TextureGrade.WpfUI
             BtnFit.Content = L.T("Btn.Fit");
             BtnActual.Content = L.T("Btn.Actual");
             BtnGrid.Content = L.T("Btn.Grid");
+            UpdateUvToggle();
             BtnIsland.Content = L.T("Btn.Island");
             BtnClearSel.Content = L.T("Btn.ClearSel");
             BtnCompare.Content = L.T("Btn.Compare");
             BtnRecvVerts.Content = L.T("Btn.RecvVerts");
             BtnSendVerts.Content = L.T("Btn.SendVerts");
 
-            SetPanMode(_mode == ToolMode.Pan);   // 模式按钮上是「下一个模式」的名字，也要跟着换
+            SetPanMode(_mode == ToolMode.Pan);
             SetReadout(null);
             UpdateHint();
 
@@ -354,18 +367,27 @@ namespace TextureGrade.WpfUI
         public bool GridVisible => _showGrid;
         public bool PanMode => _mode == ToolMode.Pan;
         public int SelectedTriangleCount => _selectedTris.Count;
+        public event Action ShowUVChanged;
+
+        private void UpdateUvToggle()
+        {
+            BtnToggleUV.Content = L.T(_showUV ? "Btn.HideUV" : "Btn.ShowUV");
+            BtnToggleUV.ToolTip = L.T("Tip.ToggleUV");
+        }
 
         public void SetShowUV(bool value)
         {
+            if (_showUV == value) return;
             _showUV = value;
+            UpdateUvToggle();
             DrawUV(_currentMatIndex);
             UpdateHint();
+            ShowUVChanged?.Invoke();
         }
 
         public void SetShowVertices(bool value)
         {
             _showVertices = value;
-            InvalidateGeo();
             DrawUV(_currentMatIndex);
         }
 
@@ -384,6 +406,29 @@ namespace TextureGrade.WpfUI
             _showHistogram = value;
             if (HistogramBox != null) HistogramBox.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
             if (value) DrawHistogram();
+            if (_uiState != null && _uiState.Set(UiState.KeyHistogram, value)) _uiState.Save();
+        }
+
+        /// <summary>
+        /// 把一组预览工具绑到它的折叠开关上：胶囊的勾选状态 <-> 按钮行的可见性。
+        /// 初始状态从 ui.json 读（键不存在时是 0 = 收起）。
+        /// </summary>
+        private void WireToolGroup(ToggleButton chip, WrapPanel body, string key)
+        {
+            bool on = _uiState.IsOn(key);
+            chip.IsChecked = on;
+            body.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+
+            chip.Checked += (s, e) =>
+            {
+                body.Visibility = Visibility.Visible;
+                if (_uiState.Set(key, true)) _uiState.Save();
+            };
+            chip.Unchecked += (s, e) =>
+            {
+                body.Visibility = Visibility.Collapsed;
+                if (_uiState.Set(key, false)) _uiState.Save();
+            };
         }
 
         /// <summary>是否正在显示原图（对比模式）。</summary>
@@ -423,8 +468,9 @@ namespace TextureGrade.WpfUI
         public void SetPanMode(bool pan)
         {
             _mode = pan ? ToolMode.Pan : ToolMode.Select;
-            // 按钮上写的是「切过去会是哪个模式」，所以这里取反显示
-            BtnMode.Content = pan ? L.T("Btn.ModeToSelect") : L.T("Btn.ModeToPan");
+            BtnSelectMode.Content = L.T("Btn.ModeToSelect");
+            BtnMode.Content = L.T("Btn.ModeToPan");
+            BtnSelectMode.Tag = pan ? null : "on";
             BtnMode.Tag = pan ? "on" : null;
             UpdateHint();
         }
@@ -452,6 +498,7 @@ namespace TextureGrade.WpfUI
                 foreach (int v in all)
                     if (_vertUv.ContainsKey(v)) _recvVerts.Add(v);
 
+                InvalidateMarkedGeometry();
                 DrawUV(_currentMatIndex);
                 Status(_recvVerts.Count > 0
                     ? L.F("St.RecvVertsFmt", _recvVerts.Count, all.Length)
@@ -562,6 +609,7 @@ namespace TextureGrade.WpfUI
         {
             // 第一组：预设 / 收藏（不是滑块组，单独构建）
             RightPanel.Children.Add(BuildPresetGroup());
+            RightPanel.Children.Add(BuildRecolorGroup());
 
             foreach (var g in _groups)
             {
@@ -575,7 +623,14 @@ namespace TextureGrade.WpfUI
                 string lastSection = null;
                 foreach (var sl in g.Sliders)
                 {
-                    if (sl.Hidden) continue;   // 只登记、不渲染（由色环等控件驱动）
+                    if (sl.Key == "Threshold")
+                        stack.Children.Add(new Border
+                        {
+                            Height = 1,
+                            Background = new SolidColorBrush(Color.FromRgb(0xE2, 0xE6, 0xEB)),
+                            Margin = new Thickness(4, 10, 12, 8),
+                            SnapsToDevicePixels = true
+                        });
                     if (!string.IsNullOrEmpty(sl.Section) && sl.Section != lastSection)
                     {
                         lastSection = sl.Section;
@@ -586,8 +641,6 @@ namespace TextureGrade.WpfUI
                 exp.Content = stack;
                 RightPanel.Children.Add(exp);
 
-                // 「Lab 取色环」紧跟「色彩」组：它属于色彩工具，但控件形态与滑块组不同，单独构建。
-                if (g.TitleKey == "Grp.Color") RightPanel.Children.Add(BuildLabGroup());
             }
 
             _status = new TextBlock
@@ -651,7 +704,10 @@ namespace TextureGrade.WpfUI
             btnRow.Children.Add(MakeSmallButtonLoc("Preset.Apply", ApplySelectedPreset));
             btnRow.Children.Add(MakeSmallButtonLoc("Preset.Delete", DeleteSelectedPreset));
             btnRow.Children.Add(MakeSmallButtonLoc("Preset.Rename", RenameSelectedPreset));
+<<<<<<< HEAD
             // 排序按钮的文字随当前排序方式变化（不用 ComboBox：ElementHost 里下拉弹层渲染有问题）
+=======
+>>>>>>> pr-1
             _btnPresetSort = MakeSmallButton("", CyclePresetSort);
             btnRow.Children.Add(_btnPresetSort);
             btnRow.Children.Add(MakeSmallButtonLoc("Preset.Up", () => MoveSelectedPreset(-1)));
@@ -910,6 +966,7 @@ namespace TextureGrade.WpfUI
         private UIElement MakeSliderRow(SliderDef def)
         {
             var grid = new Grid { Margin = new Thickness(0, 6, 0, 6) };
+            if (def.Key == "Grayscale" || def.Key == "Threshold" || def.Key == "ThresholdLevel") LocTip(grid, "Fx." + def.Key + "Tip");
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(130) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
@@ -928,10 +985,13 @@ namespace TextureGrade.WpfUI
             {
                 Minimum = def.Min,
                 Maximum = def.Max,
+                Tag = def.Key,
                 VerticalAlignment = VerticalAlignment.Center,
                 MinHeight = 26,
                 Margin = new Thickness(0, 0, 6, 0)
             };
+            if (def.Key == "Threshold") { slider.SmallChange = .01; slider.LargeChange = .1; }
+            if (def.Key == "ThresholdLevel") { slider.SmallChange = 1; slider.LargeChange = 10; }
             slider.SetBinding(Slider.ValueProperty, new Binding($"[{def.Key}]") { Source = Settings, Mode = BindingMode.TwoWay });
             slider.PreviewMouseLeftButtonDown += (s, e) => BeginHistorySession();
             slider.PreviewMouseLeftButtonUp += (s, e) => CommitHistorySession();
@@ -947,15 +1007,39 @@ namespace TextureGrade.WpfUI
                 Margin = new Thickness(14, 0, 12, 0),
                 Foreground = new SolidColorBrush(Color.FromRgb(0x3A, 0x42, 0x4C))
             };
-            val.SetBinding(TextBlock.TextProperty, new Binding($"[{def.Key}]") { Source = Settings, StringFormat = "{0:F0}" });
+            val.SetBinding(TextBlock.TextProperty, new Binding($"[{def.Key}]") { Source = Settings, StringFormat = def.Key == "Threshold" ? "{0:P0}" : "{0:F0}" });
             Grid.SetColumn(val, 2);
 
             grid.Children.Add(label);
             grid.Children.Add(slider);
-            grid.Children.Add(val);
+            if (def.Key == "ThresholdLevel")
+            {
+                var input = new TextBox { Tag = def.Key, VerticalContentAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Right, Margin = new Thickness(2, 0, 4, 0) };
+                input.SetBinding(TextBox.TextProperty, new Binding($"[{def.Key}]") { Source = Settings, Mode = BindingMode.OneWay, ConverterCulture = CultureInfo.CurrentCulture, StringFormat = "{0:0.##}" });
+                Action commit = () =>
+                {
+                    if (!double.TryParse(input.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double v) || double.IsNaN(v) || v < 0 || v > 255)
+                    {
+                        input.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
+                        Status(L.T("Fx.InvalidThreshold")); return;
+                    }
+                    // Do not round the real slider value just because the formatted field lost focus.
+                    if (input.Text == Settings[def.Key].ToString("0.##", CultureInfo.CurrentCulture)) return;
+                    BeginHistorySession(); Settings[def.Key] = v; CommitHistorySession();
+                };
+                input.LostKeyboardFocus += (s, e) => commit();
+                input.KeyDown += (s, e) =>
+                {
+                    if (e.Key == Key.Enter) { commit(); e.Handled = true; }
+                    else if (e.Key == Key.Escape) { input.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget(); e.Handled = true; }
+                };
+                Grid.SetColumn(input, 2); grid.Children.Add(input);
+            }
+            else grid.Children.Add(val);
             return grid;
         }
 
+<<<<<<< HEAD
         // ================= Lab 取色环 =================
         /// <summary>
         /// 「Lab 取色环」折叠组。
@@ -1213,28 +1297,20 @@ namespace TextureGrade.WpfUI
             _refL = L;
         }
 
+=======
+>>>>>>> pr-1
         // ================= 撤销 / 重做 =================
-        private Dictionary<string, double> Snapshot()
-        {
-            var d = new Dictionary<string, double>();
-            foreach (var g in _groups)
-                foreach (var s in g.Sliders)
-                    d[s.Key] = Settings[s.Key];
-            return d;
-        }
+        private Dictionary<string, double> Snapshot() => Settings.Capture();
 
         private void Restore(Dictionary<string, double> snap)
         {
             _suppressHistory = true;
-            _syncLab = true;
             try
             {
-                foreach (var g in _groups)
-                    foreach (var s in g.Sliders)
-                        Settings[s.Key] = snap.TryGetValue(s.Key, out var v) ? v : 0.0;
+                Settings.Replace(snap);
             }
-            finally { _suppressHistory = false; _syncLab = false; }
-            SyncLabFromSettings();
+            finally { _suppressHistory = false; }
+            RefreshRecolorUi();
             RunGradeAsync();
         }
 
@@ -1248,6 +1324,7 @@ namespace TextureGrade.WpfUI
         {
             if (!_sessionActive) return;
             _sessionActive = false;
+            RunGradeAsync();
             var now = Snapshot();
             if (SameSnapshot(now, _prevSnapshot)) return;
             PushHistory(_prevSnapshot);
@@ -1309,6 +1386,8 @@ namespace TextureGrade.WpfUI
         // ================= 数据流程 =================
         public void ReRead()
         {
+            SaveCurrentParams();
+            SaveCurrentSelection();
             var snap = _bridge.LoadCurrent();
 
             // 重新读取后尽量选回原来那个材质
@@ -1347,9 +1426,8 @@ namespace TextureGrade.WpfUI
 
         private bool IsAllZero(Dictionary<string, double> snap)
         {
-            foreach (var kv in snap)
-                if (Math.Abs(kv.Value) > 1e-9) return false;
-            return true;
+            var state = new GradeSettings(); state.Replace(snap);
+            return !HasEffectiveParams(state);
         }
 
         /// <summary>
@@ -1402,6 +1480,7 @@ namespace TextureGrade.WpfUI
             SaveCurrentSelection();
 
             var m = row.Info;
+            CancelRecolorWork();
             _currentMatIndex = m.Index;
             _currentAbsOriginal = m.TexAbsPath;
             _selectedTris.Clear();
@@ -1417,8 +1496,12 @@ namespace TextureGrade.WpfUI
                 if (!_vertUv.ContainsKey(t.i2)) _vertUv[t.i2] = (t.u2, t.v2);
                 if (!_vertUv.ContainsKey(t.i3)) _vertUv[t.i3] = (t.u3, t.v3);
             }
+<<<<<<< HEAD
             // 换回来时把该材质上次的选区装回去（模型改过则自动丢弃）
             int restored = RestoreSelection(m.Index) ? _selectedTris.Count : 0;
+=======
+            bool restoredSelection = RestoreSelection(m.Index);
+>>>>>>> pr-1
             InvalidateGeo();
             BuildIslands();
 
@@ -1430,18 +1513,24 @@ namespace TextureGrade.WpfUI
                     _originalBytes = rgba; _w = w; _h = h;
                     LayoutScene();
                     PrepareBitmaps(rgba, w, h);   // 建立 原图/调色 两张位图 + 原图直方图
-                    ComputeReferenceL();          // 画面参考亮度：Lab 取色环锁定亮度时按它绘制
                     LoadParamsFor(m.Index);       // 恢复该材质自己保存的参数
                     ResetHistory();
                     FitView();
                     RunGradeAsync();
+<<<<<<< HEAD
                     Status(restored > 0
                         ? L.F("St.SelRestoredFmt", restored)
                         : L.F("St.MatInfoFmt", m.Display, w, h, _tris.Count, _islandCount));
+=======
+                    Status(restoredSelection ? L.F("St.SelectionRestored", _selectedTris.Count) :
+                        L.F("St.MatInfoFmt", m.Display, w, h, _tris.Count, _islandCount));
+>>>>>>> pr-1
                 }
                 catch (Exception ex)
                 {
                     _originalBytes = null; PreviewImage.Source = null; _w = _h = 0;
+                    LoadParamsFor(m.Index); ResetHistory();
+                    UvCanvas.Children.Clear(); HistogramCanvas?.Children.Clear();
                     Status(L.F("St.TextureLoadFail", ex.Message));
                 }
             }
@@ -1454,6 +1543,8 @@ namespace TextureGrade.WpfUI
                 ResetHistory();
                 Status(m.HasTexture ? L.F("St.TextureMissing", m.TexAbsPath ?? "") : L.T("St.NoTexture"));
             }
+            MarkCurrentModified();
+            SyncTextureScopeUi();
             UpdateHint();
         }
 
@@ -1463,7 +1554,7 @@ namespace TextureGrade.WpfUI
         {
             if (_currentMatIndex < 0) return;
             var snap = Snapshot();
-            if (IsAllZero(snap)) _matParams.Remove(_currentMatIndex);
+            if (snap.Count == 0) _matParams.Remove(_currentMatIndex);
             else _matParams[_currentMatIndex] = snap;
         }
 
@@ -1506,15 +1597,14 @@ namespace TextureGrade.WpfUI
         private void LoadParamsFor(int matIndex)
         {
             _suppressHistory = true;
-            _syncLab = true;
             try
             {
                 Settings.Reset();
                 if (_matParams.TryGetValue(matIndex, out var d))
                     foreach (var kv in d) Settings[kv.Key] = kv.Value;
             }
-            finally { _suppressHistory = false; _syncLab = false; }
-            SyncLabFromSettings();
+            finally { _suppressHistory = false; }
+            RefreshRecolorUi();
         }
 
         /// <summary>把一份参数快照应用到当前材质（预设用）。</summary>
@@ -1523,18 +1613,20 @@ namespace TextureGrade.WpfUI
             if (_currentMatIndex < 0) { Status(L.T("St.NeedMaterial")); return; }
             PushHistory(_prevSnapshot);
             _suppressHistory = true;
-            _syncLab = true;
             try
             {
                 Settings.Reset();
                 if (values != null)
                     foreach (var kv in values)
-                        if (HasSlider(kv.Key)) Settings[kv.Key] = kv.Value;
+                        if (HasSlider(kv.Key) || kv.Key == TextureScopeKey || kv.Key.StartsWith(RecolorSettings.Prefix, StringComparison.Ordinal)) Settings[kv.Key] = kv.Value;
+                // Normalize old recolor presets so removed modes and parameters do not survive in snapshots.
+                if (Settings.Capture().Keys.Any(k => k.StartsWith(RecolorSettings.Prefix, StringComparison.Ordinal)))
+                    RecolorSettings.Read(Settings).Write(Settings);
             }
-            finally { _suppressHistory = false; _syncLab = false; }
+            finally { _suppressHistory = false; }
             _prevSnapshot = Snapshot();
             UpdateUndoButtons();
-            SyncLabFromSettings();
+            RefreshRecolorUi();
             RunGradeAsync();
             MarkCurrentModified();
         }
@@ -1549,6 +1641,7 @@ namespace TextureGrade.WpfUI
 
         private void ClearImage()
         {
+            CancelRecolorWork();
             PreviewImage.Source = null; UvCanvas.Children.Clear(); GridCanvas.Children.Clear();
             HistogramCanvas?.Children.Clear();
             _originalBytes = null; _originalBgra = null; _wb = null; _wbOriginal = null;
@@ -1598,7 +1691,8 @@ namespace TextureGrade.WpfUI
 
         public void ResetParams()
         {
-            if (!HasNonDefaultParams()) { Status(L.T("St.AlreadyDefault")); return; }
+            if (!HasNonDefaultParams() && !Settings.Capture().Keys.Any(k => k.StartsWith(RecolorSettings.Prefix))
+                && !WholeTextureScope && Math.Abs(Settings["ThresholdLevel"] - GradeSettings.DefaultThresholdLevel) < 1e-9) { Status(L.T("St.AlreadyDefault")); return; }
             PushHistory(_prevSnapshot);
             _suppressHistory = true;
             try
@@ -1609,6 +1703,7 @@ namespace TextureGrade.WpfUI
             finally { _suppressHistory = false; }
             _prevSnapshot = Snapshot();
             UpdateUndoButtons();
+            RefreshRecolorUi();
             RunGradeAsync();
             MarkCurrentModified();
             Status(L.T("St.ResetDone"));
@@ -1616,10 +1711,17 @@ namespace TextureGrade.WpfUI
 
         /// <summary>是否存在非 0（非默认）的调色参数。</summary>
         private bool HasNonDefaultParams()
+            => HasEffectiveParams(Settings);
+
+        private bool HasEffectiveParams(GradeSettings state)
         {
+            if (RecolorSettings.Read(state).HasEffect) return true;
             foreach (var g in _groups)
                 foreach (var s in g.Sliders)
-                    if (Math.Abs(Settings[s.Key]) > 1e-9) return true;
+                {
+                    if (s.Key == "ThresholdLevel") continue; // A cutoff alone does not enable the effect.
+                    if (Math.Abs(state[s.Key]) > 1e-9) return true;
+                }
             return false;
         }
 
@@ -1627,73 +1729,7 @@ namespace TextureGrade.WpfUI
         private byte[] ComputeGraded()
         {
             if (_originalBytes == null) return null;
-            byte[] grad = (byte[])_originalBytes.Clone();
-            _pipeline.Run(grad, _w, _h, Settings);
-
-            if (_maskCache == null && _selectedTris.Count > 0) _maskCache = BuildMask();
-            var mask = _maskCache;
-            if (mask != null)
-            {
-                for (int p = 0; p < mask.Length; p++)
-                {
-                    if (mask[p]) continue;
-                    int o = p * 4;
-                    grad[o] = _originalBytes[o];
-                    grad[o + 1] = _originalBytes[o + 1];
-                    grad[o + 2] = _originalBytes[o + 2];
-                    grad[o + 3] = _originalBytes[o + 3];
-                }
-            }
-            return grad;
-        }
-
-        private void RunGradeAsync()
-        {
-            if (_originalBytes == null) return;
-            int w = _w, h = _h;
-            var settings = Settings;
-            var pipeline = _pipeline;
-            byte[] original = _originalBytes;
-            bool[] mask = _maskCache;
-            if (mask == null && _selectedTris.Count > 0) { mask = BuildMask(); _maskCache = mask; }
-
-            System.Threading.Tasks.Task.Run(() =>
-            {
-                byte[] grad = (byte[])original.Clone();
-                pipeline.Run(grad, w, h, settings);
-                if (mask != null)
-                {
-                    for (int p = 0; p < mask.Length; p++)
-                    {
-                        if (mask[p]) continue;
-                        int o = p * 4;
-                        grad[o] = original[o]; grad[o + 1] = original[o + 1];
-                        grad[o + 2] = original[o + 2]; grad[o + 3] = original[o + 3];
-                    }
-                }
-                // 直方图在同一次遍历里算出来，不额外多扫一遍像素
-                return new { Bgra = RgbaToBgra(grad, w, h), Hist = ComputeHistogram(grad) };
-            }).ContinueWith(t =>
-            {
-                if (t.IsFaulted || t.Result == null) return;
-                Dispatcher.Invoke(() =>
-                {
-                    if (_wb == null || _wb.PixelWidth != w || _wb.PixelHeight != h)
-                    {
-                        _wb = new WriteableBitmap(w, h, 96, 96, PixelFormats.Bgra32, null);
-                        if (_wbOriginal == null || _wbOriginal.PixelWidth != w || _wbOriginal.PixelHeight != h)
-                        {
-                            _wbOriginal = new WriteableBitmap(w, h, 96, 96, PixelFormats.Bgra32, null);
-                            if (_originalBgra != null)
-                                _wbOriginal.WritePixels(new Int32Rect(0, 0, w, h), _originalBgra, w * 4, 0);
-                        }
-                    }
-                    _wb.WritePixels(new Int32Rect(0, 0, w, h), t.Result.Bgra, w * 4, 0);
-                    _histGraded = t.Result.Hist;
-                    ApplyPreviewSource();
-                    DrawHistogram();
-                });
-            });
+            return GradeRenderer.Render(_originalBytes, _w, _h, Settings.Copy(), CurrentRecolorMask()).Rgba;
         }
 
         /// <summary>
@@ -1764,6 +1800,7 @@ namespace TextureGrade.WpfUI
             try
             {
                 byte[] grad = ComputeGraded();
+<<<<<<< HEAD
                 bool fallback;
                 string tmp = WritePreviewFile(grad, out fallback);
                 _bridge.ApplyPreview(_currentMatIndex, tmp);
@@ -1779,6 +1816,24 @@ namespace TextureGrade.WpfUI
                 // 以前这里一抛异常就是 WPF 未处理异常（看上去像"点了没反应"），现在至少说清楚原因
                 Status(L.F("St.RefreshFailFmt", ex.Message));
             }
+=======
+                string tmp = TextureNaming.PreviewPath(_currentAbsOriginal, ++_previewCounter);
+                bool fallback = false;
+                try { TextureWriter.Save(tmp, grad, _w, _h, TextureFormat.Png); }
+                catch (System.IO.IOException) { fallback = true; }
+                catch (UnauthorizedAccessException) { fallback = true; }
+                if (fallback)
+                {
+                    tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "TextureGrade-" + Guid.NewGuid().ToString("N") + ".png");
+                    TextureWriter.Save(tmp, grad, _w, _h, TextureFormat.Png);
+                }
+                _bridge.ApplyPreview(_currentMatIndex, tmp);
+                _pushedMats.Add(_currentMatIndex);
+                MarkCurrentModified(); RefreshCurrentThumbnail(tmp);
+                Status(fallback ? L.F("St.PreviewFallbackFmt", tmp) : L.F("St.RefreshedFmt", System.IO.Path.GetFileName(tmp)));
+            }
+            catch (Exception ex) { Status(L.F("St.RefreshFailFmt", ex.Message)); }
+>>>>>>> pr-1
         }
 
         /// <summary>
@@ -1812,14 +1867,9 @@ namespace TextureGrade.WpfUI
         {
             if (_originalBytes == null || _currentMatIndex < 0 || _currentAbsOriginal == null)
             { Status(L.T("St.NeedTexturedMaterial")); return; }
-            byte[] grad = ComputeGraded();
             string newPath = TextureNaming.NewSavePath(_currentAbsOriginal);
-            TextureLoader.SavePng(newPath, grad, _w, _h);
-            _bridge.ApplySaved(_currentMatIndex, newPath);
-            _pushedMats.Add(_currentMatIndex);
-            MarkCurrentModified();
-            RefreshCurrentThumbnail(newPath);
-            Status(L.F("St.SavedNewFmt", System.IO.Path.GetFileName(newPath)));
+            try { SaveGradedTexture(newPath, TextureFormat.Png, _w, _h); Status(L.F("St.SavedNewFmt", System.IO.Path.GetFileName(newPath))); }
+            catch (Exception ex) { Status(L.F("St.SaveAsFail", ex.Message)); }
         }
 
         /// <summary>
@@ -2285,7 +2335,12 @@ namespace TextureGrade.WpfUI
         private void MarkCurrentModified()
         {
             if (_currentMatIndex < 0) return;
+<<<<<<< HEAD
             bool mod = _pushedMats.Contains(_currentMatIndex) || HasNonDefaultParams();
+=======
+            bool mod = _pushedMats.Contains(_currentMatIndex)
+                       || HasNonDefaultParams();
+>>>>>>> pr-1
             foreach (var r in _rows)
                 if (r.Info.Index == _currentMatIndex) { r.Modified = mod; break; }
         }
@@ -2298,6 +2353,7 @@ namespace TextureGrade.WpfUI
             PreviewImage.Width = _w; PreviewImage.Height = _h;
             GridCanvas.Width = _w; GridCanvas.Height = _h;
             UvCanvas.Width = _w; UvCanvas.Height = _h;
+            TextureContextCanvas.Width = _w; TextureContextCanvas.Height = _h;
         }
 
         private void CenterScene(double vw, double vh)
@@ -2360,6 +2416,7 @@ namespace TextureGrade.WpfUI
         private void ViewRoot_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (_w <= 0 || _h <= 0) return;
+            if (TryPickPaletteSource(e.GetPosition(ViewRoot))) { e.Handled = true; return; }
             ViewRoot.Focus();
             _clickCount = e.ClickCount;      // 桌面双击就是两次按下，靠它识别「双击选整块」
             var p = e.GetPosition(ViewRoot);
@@ -2604,8 +2661,7 @@ namespace TextureGrade.WpfUI
         /// <summary>选区变化后的统一收尾：遮罩失效 -> 重绘 UV -> 重跑调色。</summary>
         private void AfterSelectionChanged(string status)
         {
-            _maskCache = null;
-            InvalidateGeo();
+            InvalidateSelectionGeometry();
             DrawUV(_currentMatIndex);
             RunGradeAsync();
             Status(status);
@@ -2749,12 +2805,20 @@ namespace TextureGrade.WpfUI
 
         private bool[] BuildMask()
         {
-            if (_selectedTris.Count == 0 || _w <= 0 || _h <= 0) return null;
-            var mask = new bool[_w * _h];
-            foreach (int ti in _selectedTris)
+            return BuildMaskSnapshot(_w, _h, CaptureMaskTriangles(), System.Threading.CancellationToken.None);
+        }
+
+        private UvTri[] CaptureMaskTriangles()
+            => WholeTextureScope || _selectedTris.Count == 0 ? null : _selectedTris.Where(i => i >= 0 && i < _tris.Count).Select(i => _tris[i]).ToArray();
+
+        private static bool[] BuildMaskSnapshot(int w, int h, UvTri[] triangles, System.Threading.CancellationToken token)
+        {
+            if (triangles == null || w <= 0 || h <= 0) return null;
+            var mask = new bool[w * h];
+            foreach (var triangle in triangles)
             {
-                if (ti < 0 || ti >= _tris.Count) continue;
-                RasterizeTriangle(mask, _tris[ti]);
+                token.ThrowIfCancellationRequested();
+                RasterizeTri(mask, w, h, triangle, token);
             }
             return mask;
         }
@@ -2762,7 +2826,7 @@ namespace TextureGrade.WpfUI
         private void RasterizeTriangle(bool[] mask, UvTri t) => RasterizeTri(mask, _w, _h, t);
 
         /// <summary>把三角形栅格化进蒙版（像素中心落在三角形内即算选中）。w/h 可指定为任意目标尺寸。</summary>
-        private static void RasterizeTri(bool[] mask, int w, int h, UvTri t)
+        private static void RasterizeTri(bool[] mask, int w, int h, UvTri t, System.Threading.CancellationToken token = default)
         {
             if (w <= 0 || h <= 0) return;
             double x1 = t.u1 * w, y1 = t.v1 * h;
@@ -2779,6 +2843,7 @@ namespace TextureGrade.WpfUI
 
             for (int y = minY; y <= maxY; y++)
             {
+                if ((y & 31) == 0) token.ThrowIfCancellationRequested();
                 for (int x = minX; x <= maxX; x++)
                 {
                     double px = x + 0.5, py = y + 0.5;
@@ -2806,122 +2871,6 @@ namespace TextureGrade.WpfUI
         private static int Clamp(int v, int lo, int hi) => v < lo ? lo : (v > hi ? hi : v);
 
         // ================= UV 线框绘制（贴图像素坐标系） =================
-        private void DrawUV(int matIndex)
-        {
-            if (UvCanvas == null) return;
-            UvCanvas.Children.Clear();
-            DrawGrid();
-            if (!_showUV || matIndex < 0 || _w <= 0 || _h <= 0) return;
-
-            double th = Math.Max(0.4, 1.15 / Math.Max(_zoom, 1e-6));
-            var lineBrush = new SolidColorBrush(_uvLine);
-            var dotBrush = new SolidColorBrush(_uvVertex);
-            var selStroke = new SolidColorBrush(Color.FromArgb(240, 0, 168, 60));
-            var selFill = new SolidColorBrush(Color.FromArgb(90, 0, 200, 80));
-
-            // 1) 未选中的三角面合并进一个几何体（上千个 Path 太卡）—— 有缓存
-            if (_geoDirty || _geoAllCache == null)
-            {
-                var geoAll = new StreamGeometry();
-                using (var ctx = geoAll.Open())
-                {
-                    for (int i = 0; i < _tris.Count; i++)
-                    {
-                        if (_selectedTris.Contains(i)) continue;
-                        AppendTriangle(ctx, _tris[i]);
-                    }
-                }
-                geoAll.Freeze();
-                _geoAllCache = geoAll;
-                _geoDirty = false;
-            }
-
-            // 顶点记号：大小与缩放相关，量化后就重建（避免滚轮每一格都重建几万个菱形）
-            if (_showVertices && _tris.Count <= DotTriangleLimit)
-            {
-                bool needDots = _geoDotsCache == null
-                                || _geoDotsZoom <= 0
-                                || Math.Abs(Math.Log(_zoom / _geoDotsZoom)) > 0.22;
-                if (needDots)
-                {
-                    double r = Math.Max(0.9, 2.4 / Math.Max(_zoom, 1e-6));
-                    // Nonzero：UV 重叠的顶点菱形会互相重叠，EvenOdd 会把重叠区挖成洞
-                    var geoDots = new StreamGeometry { FillRule = FillRule.Nonzero };
-                    using (var ctx = geoDots.Open())
-                    {
-                        for (int i = 0; i < _tris.Count; i++)
-                        {
-                            Dot(ctx, _tris[i].u1, _tris[i].v1, r);
-                            Dot(ctx, _tris[i].u2, _tris[i].v2, r);
-                            Dot(ctx, _tris[i].u3, _tris[i].v3, r);
-                        }
-                    }
-                    geoDots.Freeze();
-                    _geoDotsCache = geoDots;
-                    _geoDotsZoom = _zoom;
-                }
-            }
-            else { _geoDotsCache = null; _geoDotsZoom = 0; }
-
-            UvCanvas.Children.Add(new System.Windows.Shapes.Path
-            {
-                Data = _geoAllCache,
-                Stroke = lineBrush,
-                StrokeThickness = th
-            });
-
-            // 2) 选中的三角面：单独绘制并填充高亮
-            foreach (int i in _selectedTris)
-            {
-                if (i < 0 || i >= _tris.Count) continue;
-                var geo = new StreamGeometry();
-                using (var ctx = geo.Open()) AppendTriangle(ctx, _tris[i]);
-                geo.Freeze();
-                UvCanvas.Children.Add(new System.Windows.Shapes.Path
-                {
-                    Data = geo,
-                    Stroke = selStroke,
-                    StrokeThickness = Math.Max(th, 1.0 / Math.Max(_zoom, 1e-6)),
-                    Fill = selFill
-                });
-            }
-
-            // 3) UV 顶点记号
-            if (_geoDotsCache != null)
-                UvCanvas.Children.Add(new System.Windows.Shapes.Path { Data = _geoDotsCache, Fill = dotBrush });
-
-            // 4) 选中的顶点：红色标识。
-            //    ⚠️ 必须用 Nonzero 填充：PMX 模型常有 UV 位置重叠的顶点（镜像/共位），
-            //    菱形互相重叠时 EvenOdd 会把重叠区挖成洞，看起来像「漏标」。
-            //    选中面的角点直接用面自身的 UV 画（不经过索引→UV 字典），保证一个不漏。
-            var markedGeo = new StreamGeometry { FillRule = FillRule.Nonzero };
-            using (var ctx = markedGeo.Open())
-            {
-                double r = Math.Max(2.8, 6.0 / Math.Max(_zoom, 1e-6));   // 屏幕上约 6px，不随缩放变大变小
-                foreach (int ti in _selectedTris)
-                {
-                    if (ti < 0 || ti >= _tris.Count) continue;
-                    var t = _tris[ti];
-                    Dot(ctx, t.u1, t.v1, r);
-                    Dot(ctx, t.u2, t.v2, r);
-                    Dot(ctx, t.u3, t.v3, r);
-                }
-                foreach (int vi in _recvVerts)                           // 接收来的顶点（可能不在选中面里）
-                    if (_vertUv.TryGetValue(vi, out var uv)) Dot(ctx, uv.u, uv.v, r);
-            }
-            markedGeo.Freeze();
-            if (markedGeo.Bounds.Width > 0)
-            {
-                UvCanvas.Children.Add(new System.Windows.Shapes.Path
-                {
-                    Data = markedGeo,
-                    Fill = new SolidColorBrush(Color.FromArgb(235, 255, 42, 42)),
-                    Stroke = new SolidColorBrush(Color.FromArgb(255, 110, 0, 0)),
-                    StrokeThickness = Math.Max(0.4, 0.8 / Math.Max(_zoom, 1e-6))
-                });
-            }
-        }
-
         /// <summary>
         /// 当前应标红的顶点集合（全局索引）＝ 选中三角面的所有角点 ∪ 接收到的顶点。
         /// </summary>
@@ -3014,6 +2963,7 @@ namespace TextureGrade.WpfUI
 
         private void UpdateHint()
         {
+            UpdateTextureScopeNotice();
             if (ViewHint == null) return;
             if (_w <= 0) { ViewHint.Text = L.T("Hint.PickMaterial"); return; }
             string sel = _selectedTris.Count > 0
@@ -3048,18 +2998,10 @@ namespace TextureGrade.WpfUI
             public string Label; public double Min; public double Max; public string Key;
             /// <summary>可选的小节标题：同一组内做视觉分栏（如 HSL 的每种颜色）。</summary>
             public string Section;
-            /// <summary>
-            /// 只登记、不渲染成滑块行。用于「由控件而非滑块驱动」的参数
-            /// （如 Lab 取色环的目标 a*/b*）——登记后即可自动获得
-            /// 撤销/重做、分材质保存、预设存取这些能力。
-            /// </summary>
-            public bool Hidden;
         }
         private class GroupDef { public string TitleKey; public bool Expanded; public SliderDef[] Sliders; }
         private static SliderDef S(string l, double min, double max, string k, string section = null)
             => new SliderDef { Label = l, Min = min, Max = max, Key = k, Section = section };
-        /// <summary>只登记、不渲染的参数（见 SliderDef.Hidden）。</summary>
-        private static SliderDef SH(string k) => new SliderDef { Label = k, Min = 0, Max = 1, Key = k, Hidden = true };
 
         private readonly GroupDef[] _groups = new[]
         {
@@ -3075,9 +3017,6 @@ namespace TextureGrade.WpfUI
                 S("Vibrance", -100, 100, "Vibrance"), S("Saturation", -100, 100, "Saturation"),
                 S("Hue", -180, 180, "Hue"),
                 S("ColorBalanceR", -100, 100, "ColorBalanceR"), S("ColorBalanceG", -100, 100, "ColorBalanceG"), S("ColorBalanceB", -100, 100, "ColorBalanceB"),
-                // Lab 取色环的参数：由色环/勾选框直接驱动，不出滑块行，
-                // 但登记在这里才能进撤销重做、分材质保存和预设。
-                SH("LabAmount"), SH("LabTargetL"), SH("LabTargetA"), SH("LabTargetB"), SH("LabUnlock")
             }},
             // HSL 分通道：8 个色带各自独立的 色相 / 饱和度 / 明度（Lightroom 的 HSL 面板）
             new GroupDef { TitleKey = "Grp.Hsl", Expanded = false, Sliders = new[]
@@ -3104,8 +3043,8 @@ namespace TextureGrade.WpfUI
             }},
             new GroupDef { TitleKey = "Grp.Fx", Expanded = false, Sliders = new[]
             {
-                S("Gradient", 0, 100, "Gradient"), S("Grayscale", 0, 100, "Grayscale"),
-                S("Invert", 0, 1, "Invert"), S("Threshold", 0, 1, "Threshold")
+                S("Grayscale", 0, 100, "Grayscale"),
+                S("Invert", 0, 1, "Invert"), S("Threshold", 0, 1, "Threshold"), S("ThresholdLevel", 0, 255, "ThresholdLevel")
             }}
         };
     }
